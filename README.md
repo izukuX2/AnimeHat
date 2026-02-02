@@ -4,7 +4,7 @@
     <img src="assets/images/logo_icon_foreground.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
 </a>
 
-# Mihon [App](#)
+# AnimeHat [App](#)
 
 ### Full-featured reader
 Discover and read manga, webtoons, comics, and more – easier than ever on your Android device.
