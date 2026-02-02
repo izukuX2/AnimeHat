@@ -1,7 +1,7 @@
 <div align="center">
 
 <a href="https://.app">
-    <img src="assets/images/logo_icon_foreground.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
+    <img src="assets/images/logo_no_bg.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
 </a>
 
 # AnimeHat [App](#)
