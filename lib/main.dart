@@ -22,6 +22,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'core/config/env.dart';
 import 'firebase_options.dart';
+import 'core/services/update_service.dart';
+import 'core/widgets/update_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +56,22 @@ class _AnimeHatAppState extends State<AnimeHatApp> {
   @override
   void initState() {
     super.initState();
-    _initSettings().then((_) => _handleAppSync());
+    _initSettings().then((_) {
+      _handleAppSync();
+      _checkForUpdates();
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    final updateService = UpdateService();
+    final releaseData = await updateService.checkUpdate();
+    if (releaseData != null && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => UpdateDialog(releaseData: releaseData),
+      );
+    }
   }
 
   Future<void> _initSettings() async {

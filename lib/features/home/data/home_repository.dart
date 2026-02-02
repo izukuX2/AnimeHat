@@ -97,11 +97,15 @@ class HomeRepository {
   }
 
   Future<List<Character>> getCharacters({int from = 0}) async {
-    return await apiClient.loadCharacters(from: from);
+    final chars = await apiClient.loadCharacters(from: from);
+    SupabaseArchiveService.archiveCharacters(chars);
+    return chars;
   }
 
   Future<List<Character>> getDemoCharacters() async {
-    return await apiClient.loadDemoCharacters();
+    final chars = await apiClient.loadDemoCharacters();
+    SupabaseArchiveService.archiveCharacters(chars);
+    return chars;
   }
 
   Future<Map<String, dynamic>> getExploreData({

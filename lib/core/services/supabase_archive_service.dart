@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/models/anime_model.dart';
+import '../../core/models/character_model.dart';
 
 class SupabaseArchiveService {
   static final _supabase = Supabase.instance.client;
@@ -102,6 +103,40 @@ class SupabaseArchiveService {
       );
     } catch (e) {
       debugPrint('[Supabase] Failed to archive servers for $episodeId: $e');
+    }
+  }
+
+  /// Archive characters
+  static Future<void> archiveCharacters(List<Character> characters) async {
+    if (characters.isEmpty) return;
+
+    try {
+      final List<Map<String, dynamic>> records = characters.map((c) {
+        return {
+          'id': c.id, // Using the API ID as primary key
+          'char_id': c.charId,
+          'name_en': c.nameEn,
+          'name_ar': c.nameAr,
+          'name_jp': c.nameJp,
+          'aka': c.aka,
+          'gender': c.gender,
+          'age': c.age,
+          'height': c.height,
+          'weight': c.weight,
+          'blood_type': c.bloodType,
+          'relation_id': c.relationId,
+          'photo': c.photo,
+          'cover': c.cover,
+          'views': c.views,
+          'likes': c.likersCount,
+          'last_updated': DateTime.now().toIso8601String(),
+        };
+      }).toList();
+
+      await _supabase.from('characters').upsert(records, onConflict: 'id');
+      debugPrint('[Supabase] Archived ${characters.length} characters');
+    } catch (e) {
+      debugPrint('[Supabase] Failed to archive characters: $e');
     }
   }
 }
