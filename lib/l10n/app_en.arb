@@ -1,0 +1,18 @@
+{
+  "appTitle": "AnimeHat",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "welcomeMessage": "Welcome to AnimeHat!",
+  "developer": "Made with Passion by izukuX2",
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "arabic": "Arabic",
+  "popularAnime": "Popular Anime",
+  "explore": "Explore",
+  "home": "Home",
+  "darkMode": "Dark Mode",
+  "latestNews": "Latest Anime News",
+  "broadcastSchedule": "Broadcast Schedule"
+}

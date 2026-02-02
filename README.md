@@ -1,4 +1,4 @@
-# anime_hat
+# AnimeHat
 
 A new Flutter project.
 

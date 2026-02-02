@@ -1,0 +1,47 @@
+Running Gradle task 'assembleDebug'...                          
+Note: /home/izukux2/.pub-cache/hosted/pub.dev/android_intent_plus-6.0.0/android/src/main/java/dev/fluttercommunity/plus/androidintent/MethodCallHandlerImpl.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+lib/core/services/ad_service.dart:1:8: Error: Error when reading '../../.pub-cache/hosted/pub.dev/startapp_sdk-1.0.1/lib/startapp_sdk.dart': No such file or directory
+import 'package:startapp_sdk/startapp_sdk.dart';
+       ^
+lib/core/widgets/banner_ad_widget.dart:2:8: Error: Error when reading '../../.pub-cache/hosted/pub.dev/startapp_sdk-1.0.1/lib/startapp_sdk.dart': No such file or directory
+import 'package:startapp_sdk/startapp_sdk.dart';
+       ^
+lib/core/services/ad_service.dart:14:10: Error: Type 'StartAppSdk' not found.
+  static StartAppSdk sdk = StartAppSdk();
+         ^^^^^^^^^^^
+lib/core/widgets/banner_ad_widget.dart:13:3: Error: Type 'StartAppBanner' not found.
+  StartAppBanner? _bannerAd;
+  ^^^^^^^^^^^^^^
+lib/core/services/ad_service.dart:14:10: Error: 'StartAppSdk' isn't a type.
+  static StartAppSdk sdk = StartAppSdk();
+         ^^^^^^^^^^^
+lib/core/services/ad_service.dart:14:28: Error: Method not found: 'StartAppSdk'.
+  static StartAppSdk sdk = StartAppSdk();
+                           ^^^^^^^^^^^
+lib/core/widgets/banner_ad_widget.dart:13:3: Error: 'StartAppBanner' isn't a type.
+  StartAppBanner? _bannerAd;
+  ^^^^^^^^^^^^^^
+lib/core/widgets/banner_ad_widget.dart:27:19: Error: The method 'StartAppBanner' isn't defined for the type '_BannerAdWidgetState'.
+ - '_BannerAdWidgetState' is from 'package:anime_hat/core/widgets/banner_ad_widget.dart' ('lib/core/widgets/banner_ad_widget.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'StartAppBanner'.
+      _bannerAd = StartAppBanner(
+                  ^^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/home/izukux2/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 15s
+Running Gradle task 'assembleDebug'...                             15.5s
+Gradle task assembleDebug failed with exit code 1
