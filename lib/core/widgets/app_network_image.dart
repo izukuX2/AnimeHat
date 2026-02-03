@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/image_helper.dart';
 
@@ -12,6 +13,8 @@ class AppNetworkImage extends StatelessWidget {
   final Widget? placeholder;
   final Widget? errorWidget;
   final BorderRadius? borderRadius;
+  final int? memCacheWidth;
+  final int? memCacheHeight;
 
   const AppNetworkImage({
     super.key,
@@ -24,6 +27,8 @@ class AppNetworkImage extends StatelessWidget {
     this.placeholder,
     this.errorWidget,
     this.borderRadius,
+    this.memCacheWidth,
+    this.memCacheHeight,
   });
 
   @override
@@ -42,6 +47,8 @@ class AppNetworkImage extends StatelessWidget {
       height: height,
       fit: fit,
       alignment: alignment,
+      memCacheWidth: memCacheWidth,
+      memCacheHeight: memCacheHeight,
       placeholder: (context, url) =>
           placeholder ??
           Container(
@@ -82,15 +89,15 @@ class AppNetworkImage extends StatelessWidget {
   IconData _getFallbackIcon() {
     switch (category) {
       case 'profiles':
-        return Icons.person;
+        return LucideIcons.user;
       case 'characters':
-        return Icons.face;
+        return LucideIcons.smile;
       case 'news':
-        return Icons.newspaper;
+        return LucideIcons.newspaper;
       case 'sliders':
       case 'thumbnails':
       default:
-        return Icons.movie;
+        return LucideIcons.film;
     }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/auth_repository.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -19,19 +21,21 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
 
   Future<void> _signup() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty ||
         _usernameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.pleaseFillAllFields)));
       return;
     }
 
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      ).showSnackBar(SnackBar(content: Text(l10n.passwordsDoNotMatch)));
       return;
     }
 
@@ -61,6 +65,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Container(
@@ -83,14 +88,14 @@ class _SignupScreenState extends State<SignupScreen> {
               children: [
                 IconButton(
                   icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
+                    LucideIcons.chevronLeft,
                     color: isDark ? Colors.white : Colors.black,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  "Create Account",
+                  l10n.createAccount,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -99,7 +104,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Join the AnimeHat community",
+                  l10n.joinCommunity,
                   style: TextStyle(
                     fontSize: 16,
                     color: (isDark ? Colors.white : Colors.black).withOpacity(
@@ -110,49 +115,49 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 50),
                 _buildTextField(
                   controller: _usernameController,
-                  label: "Username",
-                  icon: Icons.person_outline_rounded,
+                  label: l10n.username,
+                  icon: LucideIcons.user,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
                   controller: _emailController,
-                  label: "Email Address",
-                  icon: Icons.email_outlined,
+                  label: l10n.emailAddress,
+                  icon: LucideIcons.mail,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
                   controller: _passwordController,
-                  label: "Password",
-                  icon: Icons.lock_outline,
+                  label: l10n.password,
+                  icon: LucideIcons.lock,
                   isDark: isDark,
                   isPassword: true,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
                   controller: _confirmPasswordController,
-                  label: "Confirm Password",
-                  icon: Icons.lock_clock_outlined,
+                  label: l10n.confirmPassword,
+                  icon: LucideIcons.lock,
                   isDark: isDark,
                   isPassword: true,
                 ),
                 const SizedBox(height: 40),
-                _buildSignupButton(isDark),
+                _buildSignupButton(isDark, l10n),
                 const SizedBox(height: 30),
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: RichText(
                       text: TextSpan(
-                        text: "Already have an account? ",
+                        text: "${l10n.alreadyHaveAccount} ",
                         style: TextStyle(
                           color: (isDark ? Colors.white : Colors.black)
                               .withOpacity(0.6),
                         ),
                         children: [
                           TextSpan(
-                            text: "Login",
+                            text: l10n.login,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.darkPrimary
@@ -205,9 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+                    _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
                     color: (isDark ? Colors.white : Colors.black).withOpacity(
                       0.5,
                     ),
@@ -226,7 +229,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildSignupButton(bool isDark) {
+  Widget _buildSignupButton(bool isDark, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
       height: 60,
@@ -241,9 +244,9 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                "Sign Up",
-                style: TextStyle(
+            : Text(
+                l10n.signup,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

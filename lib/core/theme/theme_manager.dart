@@ -4,6 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'accent_colors.dart';
 
 /// Available app themes
 enum AppThemeType {
@@ -212,21 +214,41 @@ class ThemeManager {
   };
 
   /// Build ThemeData from theme type
-  ThemeData buildTheme(AppThemeType type) {
+  ThemeData buildTheme(
+    AppThemeType type, {
+    Locale locale = const Locale('en'),
+    AccentPreset? accentOverride,
+  }) {
     final config = themes[type]!;
     final isDark = config.brightness == Brightness.dark;
+
+    final primary = accentOverride?.primary ?? config.primaryColor;
+    final secondary = accentOverride?.secondary ?? config.secondaryColor;
+
+    // Select font based on language
+    final String languageCode = locale.languageCode;
+    final TextTheme baseTextTheme = ThemeData(
+      brightness: config.brightness,
+    ).textTheme;
+
+    TextTheme selectedTextTheme;
+    if (languageCode == 'ar') {
+      selectedTextTheme = GoogleFonts.cairoTextTheme(baseTextTheme);
+    } else {
+      selectedTextTheme = GoogleFonts.outfitTextTheme(baseTextTheme);
+    }
 
     return ThemeData(
       useMaterial3: true,
       brightness: config.brightness,
-      primaryColor: config.primaryColor,
+      primaryColor: primary,
       scaffoldBackgroundColor: config.backgroundColor,
 
       colorScheme: ColorScheme(
         brightness: config.brightness,
-        primary: config.primaryColor,
+        primary: primary,
         onPrimary: isDark ? Colors.black : Colors.white,
-        secondary: config.secondaryColor,
+        secondary: secondary,
         onSecondary: isDark ? Colors.black : Colors.white,
         error: const Color(0xFFCF6679),
         onError: Colors.black,
@@ -300,7 +322,7 @@ class ThemeManager {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: config.primaryColor, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -310,7 +332,7 @@ class ThemeManager {
 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: config.primaryColor,
+          backgroundColor: primary,
           foregroundColor: isDark ? Colors.black : Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -323,32 +345,40 @@ class ThemeManager {
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: config.primaryColor,
+          foregroundColor: primary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
 
       iconTheme: IconThemeData(color: config.textPrimary, size: 24),
 
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: selectedTextTheme.copyWith(
+        headlineLarge: selectedTextTheme.headlineLarge?.copyWith(
           color: config.textPrimary,
           fontSize: 32,
           fontWeight: FontWeight.bold,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: selectedTextTheme.headlineMedium?.copyWith(
           color: config.textPrimary,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
-        titleLarge: TextStyle(
+        titleLarge: selectedTextTheme.titleLarge?.copyWith(
           color: config.textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(color: config.textPrimary, fontSize: 16),
-        bodyMedium: TextStyle(color: config.textSecondary, fontSize: 14),
+        bodyLarge: selectedTextTheme.bodyLarge?.copyWith(
+          color: config.textPrimary,
+          fontSize: 16,
+        ),
+        bodyMedium: selectedTextTheme.bodyMedium?.copyWith(
+          color: config.textSecondary,
+          fontSize: 14,
+        ),
       ),
+
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: primary),
 
       dividerTheme: DividerThemeData(
         color: config.textSecondary.withOpacity(0.2),
@@ -357,28 +387,22 @@ class ThemeManager {
       ),
 
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark
-            ? const Color(0xFF333333)
-            : const Color(0xFF333333),
+        backgroundColor: const Color(0xFF333333),
         contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: config.primaryColor,
-      ),
-
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return config.primaryColor;
+            return primary;
           }
           return null;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return config.primaryColor.withOpacity(0.5);
+            return primary.withOpacity(0.5);
           }
           return null;
         }),

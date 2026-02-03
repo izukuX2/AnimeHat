@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/repositories/post_repository.dart';
 import '../../../../core/repositories/comment_repository.dart';
 import '../../../../core/models/post_model.dart';
@@ -6,6 +7,7 @@ import '../../../../core/models/comment_model.dart';
 import '../../../../core/widgets/interaction_buttons.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/comment_item.dart';
 
@@ -25,6 +27,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   final AuthRepository _auth = AuthRepository();
   final TextEditingController _postController = TextEditingController();
   bool _isPosting = false;
+  bool _isSpoiler = false;
 
   @override
   void dispose() {
@@ -35,9 +38,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Future<void> _submitPost() async {
     final user = _auth.currentUser;
     if (user == null) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Please login to post")));
+      ).showSnackBar(SnackBar(content: Text(l10n.loginToPost)));
       return;
     }
 
@@ -50,35 +54,45 @@ class _CommunityScreenState extends State<CommunityScreen> {
         final comment = Comment(
           id: '',
           authorUid: user.uid,
-          authorName: user.displayName ?? "Anonymous",
+          authorName:
+              user.displayName ?? AppLocalizations.of(context)!.anonymous,
           authorPhotoUrl: user.photoURL,
           content: _postController.text.trim(),
           animeId: widget.animeId!,
           createdAt: DateTime.now(),
+          isSpoiler: _isSpoiler,
         );
         await _commentRepository.addComment(comment);
       } else {
         // Create Post
-        await _postRepository.createPost(
-          user.uid,
-          user.displayName ?? "Anonymous",
-          user.photoURL,
-          _postController.text.trim(),
-          'Discussion',
+        final post = Post(
+          id: '',
+          authorUid: user.uid,
+          authorName:
+              user.displayName ?? AppLocalizations.of(context)!.anonymous,
+          authorPhotoUrl: user.photoURL,
+          content: _postController.text.trim(),
+          category: 'Discussion',
+          createdAt: DateTime.now(),
+          isSpoiler: _isSpoiler,
         );
+        await _postRepository.addPost(post);
       }
 
       _postController.clear();
+      setState(() => _isSpoiler = false);
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Posted successfully!")));
+        ).showSnackBar(SnackBar(content: Text(l10n.postedSuccessfully)));
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+        ).showSnackBar(SnackBar(content: Text("${l10n.errorPrefix}: $e")));
       }
     } finally {
       if (mounted) setState(() => _isPosting = false);
@@ -89,10 +103,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.animeTitle != null ? "${widget.animeTitle} Club" : "Community",
+          widget.animeTitle != null
+              ? "${widget.animeTitle} ${l10n.clubSuffix}"
+              : l10n.community,
         ),
         backgroundColor: isDark ? AppColors.darkPrimary : AppColors.primary,
       ),
@@ -106,6 +124,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Widget _buildPostInput(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -116,32 +135,47 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: TextField(
-              controller: _postController,
-              decoration: InputDecoration(
-                hintText: "What's on your mind?",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _postController,
+                  decoration: InputDecoration(
+                    hintText: l10n.postHint,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                  ),
+                  maxLines: null,
                 ),
               ),
-              maxLines: null,
-            ),
+              const SizedBox(width: 8),
+              _isPosting
+                  ? const CircularProgressIndicator()
+                  : IconButton(
+                      onPressed: _submitPost,
+                      icon: const Icon(LucideIcons.send),
+                      color: isDark ? AppColors.darkPrimary : AppColors.primary,
+                    ),
+            ],
           ),
-          const SizedBox(width: 8),
-          _isPosting
-              ? const CircularProgressIndicator()
-              : IconButton(
-                  onPressed: _submitPost,
-                  icon: const Icon(Icons.send),
-                  color: isDark ? AppColors.darkPrimary : AppColors.primary,
-                ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Checkbox(
+                value: _isSpoiler,
+                onChanged: (val) => setState(() => _isSpoiler = val ?? false),
+                activeColor: AppColors.primary,
+              ),
+              Text(l10n.spoiler, style: const TextStyle(fontSize: 14)),
+            ],
+          ),
         ],
       ),
     );
@@ -156,8 +190,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final comments = snapshot.data ?? [];
+          final l10n = AppLocalizations.of(context)!;
           if (comments.isEmpty) {
-            return const Center(child: Text("No comments yet."));
+            return Center(child: Text(l10n.noComments));
           }
           return ListView.builder(
             itemCount: comments.length,
@@ -174,8 +209,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final posts = snapshot.data ?? [];
+          final l10n = AppLocalizations.of(context)!;
           if (posts.isEmpty) {
-            return const Center(child: Text("No posts yet."));
+            return Center(child: Text(l10n.noPosts));
           }
           return ListView.builder(
             itemCount: posts.length,
@@ -226,7 +262,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ? NetworkImage(item.authorPhotoUrl!)
                       : null,
                   child: item.authorPhotoUrl == null
-                      ? const Icon(Icons.person, color: Colors.white)
+                      ? const Icon(LucideIcons.user, color: Colors.white)
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -251,7 +287,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(item.content),
+            const SizedBox(height: 12),
+            _SpoilerContent(
+              content: item.content,
+              isSpoiler: item.isSpoiler,
+              l10n: AppLocalizations.of(context)!,
+            ),
             const SizedBox(height: 12),
             InteractionButtons(
               isLiked: isLiked,
@@ -262,17 +303,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 _postRepository.likePost(item.id, currentUser.uid);
               },
               onReply: () {
+                final l10n = AppLocalizations.of(context)!;
                 if (currentUser == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Please login to reply")),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l10n.loginToReply)));
                   return;
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Replies to posts coming soon!"),
-                  ),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.repliesSoon)));
               },
               canDelete: canDelete,
               onDelete: () {
@@ -288,20 +328,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _showReplyDialog(Comment parentComment) {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Reply"),
+          title: Text(l10n.replyLabel),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(hintText: "Write a reply..."),
+            decoration: InputDecoration(hintText: l10n.replyHint),
             autofocus: true,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -312,7 +353,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   final reply = Comment(
                     id: '', // Generated by Repo
                     authorUid: user.uid,
-                    authorName: user.displayName ?? "Anonymous",
+                    authorName: user.displayName ?? l10n.anonymous,
                     authorPhotoUrl: user.photoURL,
                     content: text,
                     animeId: parentComment.animeId, // Inherit animeId
@@ -322,24 +363,98 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   try {
                     await _commentRepository.addComment(reply);
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Reply added!")),
-                      );
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(l10n.replyAdded)));
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("${l10n.errorPrefix}: $e")),
+                      );
                     }
                   }
                 }
               },
-              child: const Text("Reply"),
+              child: Text(l10n.replyLabel),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+class _SpoilerContent extends StatefulWidget {
+  final String content;
+  final bool isSpoiler;
+  final AppLocalizations l10n;
+
+  const _SpoilerContent({
+    required this.content,
+    required this.isSpoiler,
+    required this.l10n,
+  });
+
+  @override
+  State<_SpoilerContent> createState() => _SpoilerContentState();
+}
+
+class _SpoilerContentState extends State<_SpoilerContent> {
+  late bool _showContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _showContent = !widget.isSpoiler;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showContent) {
+      return Text(widget.content);
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: () => setState(() => _showContent = true),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.eyeOff, color: Colors.red, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.l10n.spoiler,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    widget.l10n.showContent,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, color: Colors.red, size: 16),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,16 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/models/anime_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/home_repository.dart';
 import '../widgets/anime_card.dart';
 
-class LibraryView extends StatelessWidget {
+class LibraryView extends StatefulWidget {
   final HomeRepository repository;
 
   const LibraryView({super.key, required this.repository});
+
+  @override
+  State<LibraryView> createState() => _LibraryViewState();
+}
+
+class _LibraryViewState extends State<LibraryView> {
+  String _searchQuery = "";
+  String _sortBy = 'addedAt'; // 'addedAt', 'title'
+
+  void _setSearchQuery(String query) {
+    setState(() => _searchQuery = query.toLowerCase());
+  }
+
+  void _setSortBy(String? sort) {
+    if (sort != null) setState(() => _sortBy = sort);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +63,10 @@ class LibraryView extends StatelessWidget {
 
         return DefaultTabController(
           length: allCategories.length,
-          key: ValueKey(allCategories.length), // Recreate if count changes
+          key: ValueKey(allCategories.length),
           child: Column(
             children: [
+              _buildHeader(),
               TabBar(
                 isScrollable: true,
                 labelColor: AppColors.primary,
@@ -72,12 +90,56 @@ class LibraryView extends StatelessWidget {
     );
   }
 
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              onChanged: _setSearchQuery,
+              decoration: InputDecoration(
+                hintText: "Search library...",
+                prefixIcon: const Icon(LucideIcons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey.withOpacity(0.1),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          DropdownButton<String>(
+            value: _sortBy,
+            underline: const SizedBox(),
+            icon: const Icon(LucideIcons.listFilter, size: 20),
+            items: const [
+              DropdownMenuItem(value: 'addedAt', child: Text("Date")),
+              DropdownMenuItem(value: 'title', child: Text("Name")),
+            ],
+            onChanged: _setSortBy,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryList(
     BuildContext context,
     String category,
     List<LibraryEntry> library,
   ) {
-    final items = library.where((e) => e.category == category).toList();
+    var items = library.where((e) => e.category == category).toList();
+
+    // Sorting logic (Note: requires anime title which we fetch later in FutureBuilder)
+    // For sorting by title, we might need to pre-fetch or handle it differently.
+    // Let's sort by addedAt for now.
+    if (_sortBy == 'addedAt') {
+      items.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+    }
 
     if (items.isEmpty) {
       return Center(child: Text("No anime in '$category' yet."));
@@ -94,35 +156,76 @@ class LibraryView extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final entry = items[index];
-        // Fetch Anime details
-        // Note: Ideally we should cache or batch this.
         return FutureBuilder<Anime>(
-          future: repository.getAnimeById(entry.animeId),
+          future: widget.repository.getAnimeById(entry.animeId),
           builder: (context, animeSnapshot) {
             if (!animeSnapshot.hasData) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              );
+              return _buildLoadingCard();
             }
             final anime = animeSnapshot.data!;
-            return AnimeCard(
-              title: anime.enTitle,
-              imageUrl: anime.thumbnail,
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/anime-details',
-                arguments: anime,
-              ),
+
+            // Search Filtering
+            if (_searchQuery.isNotEmpty &&
+                !anime.enTitle.toLowerCase().contains(_searchQuery)) {
+              return const SizedBox.shrink();
+            }
+
+            return Stack(
+              children: [
+                AnimeCard(
+                  title: anime.enTitle,
+                  imageUrl: anime.thumbnail,
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    '/anime-details',
+                    arguments: anime,
+                  ),
+                ),
+                // Quick Update Button for 'Watching'
+                if (category == 'Watching')
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: _buildQuickUpdateIcon(anime),
+                  ),
+              ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildQuickUpdateIcon(Anime anime) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.9),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: const Icon(LucideIcons.plus, size: 16, color: Colors.white),
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        padding: EdgeInsets.zero,
+        onPressed: () => _updateProgress(anime),
+      ),
+    );
+  }
+
+  void _updateProgress(Anime anime) {
+    // In a real app, this would increment the 'watchedEpisodes' field in the LibraryEntry
+    // Since our LibraryEntry doesn't have it yet, this is a placeholder for the logic.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Updated progress for ${anime.enTitle} (Stub)")),
+    );
+  }
+
+  Widget _buildLoadingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }

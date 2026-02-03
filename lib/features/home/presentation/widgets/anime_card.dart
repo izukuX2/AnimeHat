@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_network_image.dart';
 
-class AnimeCard extends StatelessWidget {
+class AnimeCard extends StatefulWidget {
   final String title;
   final String imageUrl;
   final String? subtitle;
@@ -22,13 +22,59 @@ class AnimeCard extends StatelessWidget {
   });
 
   @override
+  State<AnimeCard> createState() => _AnimeCardState();
+}
+
+class _AnimeCardState extends State<AnimeCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (isCompact) {
-      return _buildCompactCard(context, isDark);
-    }
-    return _buildRegularCard(context, isDark);
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
+      },
+      child: widget.isCompact
+          ? _buildCompactCard(context, isDark)
+          : _buildRegularCard(context, isDark),
+    );
   }
 
   Widget _buildCompactCard(BuildContext context, bool isDark) {
@@ -36,7 +82,9 @@ class AnimeCard extends StatelessWidget {
     final borderRadius = shape?.borderRadius ?? BorderRadius.circular(16);
 
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
@@ -58,7 +106,7 @@ class AnimeCard extends StatelessWidget {
               // Image
               Positioned.fill(
                 child: AppNetworkImage(
-                  path: imageUrl,
+                  path: widget.imageUrl,
                   category: 'thumbnails',
                   fit: BoxFit.cover,
                 ),
@@ -89,7 +137,7 @@ class AnimeCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      title,
+                      widget.title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -106,10 +154,10 @@ class AnimeCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (subtitle != null) ...[
+                    if (widget.subtitle != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        subtitle!,
+                        widget.subtitle!,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 10,
@@ -123,7 +171,7 @@ class AnimeCard extends StatelessWidget {
                 ),
               ),
               // Episode Badge
-              if (episodeBadge != null)
+              if (widget.episodeBadge != null)
                 Positioned(
                   top: 8,
                   right: 8,
@@ -138,7 +186,7 @@ class AnimeCard extends StatelessWidget {
                       border: Border.all(color: Colors.white24, width: 0.5),
                     ),
                     child: Text(
-                      episodeBadge!,
+                      widget.episodeBadge!,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
@@ -148,7 +196,7 @@ class AnimeCard extends StatelessWidget {
                   ),
                 ),
               // Rating badge
-              if (rating != null)
+              if (widget.rating != null)
                 Positioned(
                   top: 8,
                   left: 8,
@@ -167,7 +215,7 @@ class AnimeCard extends StatelessWidget {
                         const Icon(Icons.star, color: Colors.black, size: 10),
                         const SizedBox(width: 2),
                         Text(
-                          rating!.toStringAsFixed(1),
+                          widget.rating!.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 9,
@@ -190,7 +238,9 @@ class AnimeCard extends StatelessWidget {
     final borderRadius = shape?.borderRadius ?? BorderRadius.circular(16);
 
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       child: Container(
         width: 160,
         margin: const EdgeInsets.only(right: 16),
@@ -215,7 +265,7 @@ class AnimeCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               AppNetworkImage(
-                path: imageUrl,
+                path: widget.imageUrl,
                 category: 'thumbnails',
                 fit: BoxFit.cover,
               ),
@@ -232,7 +282,7 @@ class AnimeCard extends StatelessWidget {
               Positioned(
                 top: 12,
                 right: 12,
-                child: episodeBadge != null
+                child: widget.episodeBadge != null
                     ? Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -244,7 +294,7 @@ class AnimeCard extends StatelessWidget {
                           border: Border.all(color: Colors.white12, width: 0.5),
                         ),
                         child: Text(
-                          episodeBadge!,
+                          widget.episodeBadge!,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -254,7 +304,7 @@ class AnimeCard extends StatelessWidget {
                       )
                     : const SizedBox.shrink(),
               ),
-              if (rating != null)
+              if (widget.rating != null)
                 Positioned(
                   top: 12,
                   left: 12,
@@ -273,7 +323,7 @@ class AnimeCard extends StatelessWidget {
                         const Icon(Icons.star, color: Colors.black, size: 12),
                         const SizedBox(width: 4),
                         Text(
-                          rating!.toStringAsFixed(1),
+                          widget.rating!.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 11,
@@ -291,7 +341,7 @@ class AnimeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      widget.title,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -307,10 +357,10 @@ class AnimeCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (subtitle != null) ...[
+                    if (widget.subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        subtitle!,
+                        widget.subtitle!,
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 12,

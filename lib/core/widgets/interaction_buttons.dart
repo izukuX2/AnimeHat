@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class InteractionButtons extends StatelessWidget {
   final bool isLiked;
@@ -37,7 +38,7 @@ class InteractionButtons extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  isLiked ? Icons.favorite : Icons.favorite_border,
+                  isLiked ? LucideIcons.heart : LucideIcons.heart,
                   size: 18,
                   color: isLiked ? activeColor : iconColor,
                 ),
@@ -63,7 +64,7 @@ class InteractionButtons extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               children: [
-                Icon(Icons.chat_bubble_outline, size: 18, color: iconColor),
+                Icon(LucideIcons.messageCircle, size: 18, color: iconColor),
                 const SizedBox(width: 4),
                 Text(
                   "$replyCount",
@@ -80,7 +81,7 @@ class InteractionButtons extends StatelessWidget {
         if (canDelete && onDelete != null) ...[
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.delete_outline, size: 18),
+            icon: const Icon(LucideIcons.trash2, size: 18),
             color: Colors.redAccent.withOpacity(0.8),
             onPressed: onDelete,
             padding: EdgeInsets.zero,

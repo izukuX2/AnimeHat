@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'dart:io';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -15,6 +16,8 @@ import '../../../auth/data/auth_repository.dart';
 import '../../../../core/utils/link_resolver.dart';
 import '../../../anime_details/data/anime_repository.dart';
 import '../../../../core/api/animeify_api_client.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/services/share_service.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -65,7 +68,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   // Persistence & Settings
   double _playbackSpeed = 1.0;
   bool _isAutoNextEnabled = true;
+  bool _isAutoSkipEnabled = true;
   static const String _prefQualityKey = 'preferred_quality_name';
+  static const String _prefAutoSkipKey = 'auto_skip_intro';
 
   // Power User Features
   Timer? _sleepTimer;
@@ -103,6 +108,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   Timer? _bufferingSimulatorTimer;
   String _bufferingSpeed = "0 KB/s";
   final Random _random = Random();
+
+  bool _isPiPActive = false;
 
   @override
   void initState() {
@@ -158,6 +165,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     if (savedQuality != null && savedQuality != _activeServerName) {
       // Logic to auto-switch if preferred quality exists in list could go here
     }
+    _isAutoSkipEnabled = prefs.getBool(_prefAutoSkipKey) ?? true;
   }
 
   Future<void> _handlePermissions() async {
@@ -203,7 +211,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         setState(() {
           _hasError = true;
           _isLoading = false;
-          _errorMessage = "Failed to load video.";
+          final l10n = AppLocalizations.of(context)!;
+          _errorMessage = l10n.mediaUnavailable; // or generalized
         });
     }
   }
@@ -220,8 +229,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         // Auto-Next Trigger
         _triggerAutoNextCountdown();
       }
+
+      // Skip Intro Logic (85s to 95s range)
+      final posSec = _videoPlayerController!.value.position.inSeconds;
+      if (posSec >= 85 && posSec <= 95) {
+        if (_isAutoSkipEnabled) {
+          _skipIntro();
+        } else {
+          _showSkipIntroButton = true;
+        }
+      } else {
+        if (_showSkipIntroButton) _showSkipIntroButton = false;
+      }
+
       setState(() {});
     }
+  }
+
+  bool _showSkipIntroButton = false;
+
+  void _skipIntro() {
+    _videoPlayerController?.seekTo(const Duration(seconds: 90)); // Jump to 1:30
+    setState(() => _showSkipIntroButton = false);
   }
 
   void _triggerAutoNextCountdown() {
@@ -325,7 +354,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     } catch (e) {
       setState(() {
         _hasError = true;
-        _errorMessage = "Could not load next episode.";
+        final l10n = AppLocalizations.of(context)!;
+        _errorMessage = l10n.mediaUnavailable;
       });
     }
   }
@@ -352,7 +382,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = "Quality switch failed.";
+        final l10n = AppLocalizations.of(context)!;
+        _errorMessage = l10n.failedToResolveLink;
       });
     }
   }
@@ -477,7 +508,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Sleep timer set for $minutes mins")),
+      SnackBar(
+        content: Text("Sleep timer set for $minutes mins"),
+      ), // Keeping for now or I can add to ARB
     );
   }
 
@@ -497,6 +530,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
     return Scaffold(
@@ -580,7 +614,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               top: 50,
               right: 30,
               child: _glassBtn(
-                Icons.lock,
+                LucideIcons.lock,
                 () => setState(() => _isLocked = false),
               ),
             ),
@@ -605,13 +639,44 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               (_videoPlayerController?.value.isBuffering ?? false))
             _buildBufferingIndicator(),
 
-          // 6. Volume/Brightness Indicators (Center + Side)
+          // 6. Volume/Brightness Indicators (Side Vertical Bars)
           if (_showVolumeIndicator)
-            Center(child: _buildCenterIcon(Icons.volume_up, _currentVolume)),
+            Positioned(
+              right: 20,
+              top: MediaQuery.of(context).size.height * 0.25,
+              bottom: MediaQuery.of(context).size.height * 0.25,
+              child: _buildSideIndicator(LucideIcons.volume2, _currentVolume),
+            ),
 
           if (_showBrightnessIndicator)
-            Center(
-              child: _buildCenterIcon(Icons.brightness_6, _currentBrightness),
+            Positioned(
+              left: 20,
+              top: MediaQuery.of(context).size.height * 0.25,
+              bottom: MediaQuery.of(context).size.height * 0.25,
+              child: _buildSideIndicator(LucideIcons.sun, _currentBrightness),
+            ),
+
+          // 7. Skip Intro Button
+          if (_showSkipIntroButton && !_isPiPActive && !_isLocked)
+            Positioned(
+              bottom: 120,
+              right: 30,
+              child: ElevatedButton.icon(
+                onPressed: _skipIntro,
+                icon: const Icon(LucideIcons.fastForward, size: 18),
+                label: Text(l10n.skipIntro),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent.withOpacity(0.8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
@@ -628,7 +693,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             const CircularProgressIndicator(color: Colors.blueAccent),
             const SizedBox(height: 10),
             Text(
-              "Buffering... $_bufferingSpeed",
+              "Buffering... $_bufferingSpeed", // "Buffering" could be in ARB
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -641,33 +706,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     );
   }
 
-  // New Center Icon for Gesture Feedback
-  Widget _buildCenterIcon(IconData icon, double value) {
-    return Container(
-      width: 100,
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white, size: 40),
-          const SizedBox(height: 10),
-          Text(
-            "${(value * 100).toInt()}%",
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed unused _buildCenterIcon
 
   Widget _buildNetflixOverlay() {
+    final l10n = AppLocalizations.of(context)!;
     return Stack(
       children: [
         // Top Gradient & Title
@@ -687,7 +729,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
                 const SizedBox(width: 10),
@@ -705,10 +747,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                         maxLines: 1,
                       ),
                       Text(
-                        "Quality: ${_parseQuality(_currentServers.firstWhere(
+                        "${l10n.selectQuality}: ${_parseQuality(_currentServers.firstWhere(
                           (s) => s.name == _activeServerName,
                           orElse: () => StreamingServer(name: _activeServerName, url: ""),
-                        ))} • Ep ${_currentEpisode.episodeNumber}",
+                        ))} • ${l10n.epShort} ${_currentEpisode.episodeNumber}",
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 12,
@@ -718,21 +760,26 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.picture_in_picture_alt,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(LucideIcons.monitor, color: Colors.white),
                   onPressed: _enterPiP,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  icon: const Icon(
+                    LucideIcons.moreVertical,
+                    color: Colors.white,
+                  ),
                   onPressed: _showMoreOptionsMenu,
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.settings_outlined,
-                    color: Colors.white,
+                  icon: const Icon(LucideIcons.share, color: Colors.white),
+                  onPressed: () => ShareService().shareEpisode(
+                    animeId: widget.anime.animeId,
+                    episodeNumber: _currentEpisode.episodeNumber,
+                    animeTitle: widget.anime.enTitle,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(LucideIcons.settings, color: Colors.white),
                   onPressed: () => setState(() => _showSettings = true),
                 ),
               ],
@@ -746,7 +793,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               _glassBtn(
-                Icons.replay_10,
+                LucideIcons.rotateCcw,
                 () => _videoPlayerController!.seekTo(
                   _videoPlayerController!.value.position -
                       const Duration(seconds: 10),
@@ -780,8 +827,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                         ),
                       Icon(
                         _videoPlayerController?.value.isPlaying == true
-                            ? Icons.pause
-                            : Icons.play_arrow,
+                            ? LucideIcons.pause
+                            : LucideIcons.play,
                         color: Colors.white,
                         size: 50,
                       ),
@@ -791,7 +838,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
               ),
               const SizedBox(width: 40),
               _glassBtn(
-                Icons.forward_10,
+                LucideIcons.rotateCw,
                 () => _videoPlayerController!.seekTo(
                   _videoPlayerController!.value.position +
                       const Duration(seconds: 10),
@@ -820,20 +867,24 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                 Row(
                   children: [
                     _glassBtn(
-                      Icons.skip_previous,
+                      LucideIcons.skipBack,
                       _playPreviousEpisode,
                       small: true,
                     ),
-                    _glassBtn(Icons.skip_next, _playNextEpisode, small: true),
+                    _glassBtn(
+                      LucideIcons.skipForward,
+                      _playNextEpisode,
+                      small: true,
+                    ),
                     const Spacer(),
                     _glassBtn(
-                      Icons.lock_open,
+                      LucideIcons.unlock,
                       () => setState(() => _isLocked = true),
                       small: true,
                     ),
                     const SizedBox(width: 15),
                     _glassBtn(
-                      Icons.view_list,
+                      LucideIcons.list,
                       () => setState(() => _showEpisodeList = true),
                       small: true,
                     ),
@@ -921,33 +972,105 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     return Align(
       alignment: _isLeftTap ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
-        width: MediaQuery.of(context).size.width / 2,
+        width: MediaQuery.of(context).size.width / 3,
+        height: double.infinity,
         decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: _isLeftTap ? Alignment.centerLeft : Alignment.centerRight,
-            radius: 0.8,
-            colors: [Colors.white.withOpacity(0.2), Colors.transparent],
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(_isLeftTap ? 1000 : 0),
+            bottomRight: Radius.circular(_isLeftTap ? 1000 : 0),
+            topLeft: Radius.circular(_isLeftTap ? 0 : 1000),
+            bottomLeft: Radius.circular(_isLeftTap ? 0 : 1000),
           ),
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _isLeftTap ? Icons.fast_rewind : Icons.fast_forward,
-                color: Colors.white,
-                size: 40,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _isLeftTap ? LucideIcons.rewind : LucideIcons.fastForward,
+                  color: Colors.white,
+                  size: 32,
+                ),
               ),
+              const SizedBox(height: 8),
               Text(
                 _isLeftTap ? "-10s" : "+10s",
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSideIndicator(IconData icon, double value) {
+    return Container(
+      width: 40,
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white24, width: 1),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Container(
+              width: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  FractionallySizedBox(
+                    heightFactor: value,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withOpacity(0.5),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              "${(value * 100).toInt()}",
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -985,47 +1108,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     });
   }
 
-  void _showPermissionDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (c) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          "Permission Required",
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(message, style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () {
-              openAppSettings();
-              Navigator.pop(c);
-            },
-            child: const Text(
-              "Open Settings",
-              style: TextStyle(color: Colors.blueAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _enterPiP() async {
-    if (Platform.isAndroid) {
-      try {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Entering PiP Mode...")));
-      } catch (e) {
-        _showPermissionDialog(
-          "Picture-in-Picture failed. Please enable 'Display over other apps' in settings.",
-        );
-      }
+    // PiP temporarily disabled - requires native implementation
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Picture-in-Picture coming soon!")),
+      );
     }
   }
 
@@ -1081,16 +1169,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _menuOption(Icons.timer, "Sleep Timer", () {
+            _menuOption(LucideIcons.clock, "Sleep Timer", () {
               Navigator.pop(c);
               _showSleepTimerDialog();
             }),
-            _menuOption(Icons.speed, "Playback Speed", () {
+            _menuOption(LucideIcons.gauge, "Playback Speed", () {
               Navigator.pop(c);
               _showSpeedSliderDialog();
             }),
             _menuOption(
-              Icons.screen_rotation,
+              LucideIcons.repeat,
               "Rotation Lock",
               _toggleRotationLock,
               trailing: Switch(
@@ -1099,7 +1187,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                 activeColor: Colors.blueAccent,
               ),
             ),
-            _menuOption(Icons.screenshot, "Screenshot", () {
+            _menuOption(LucideIcons.camera, "Screenshot", () {
               Navigator.pop(c);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Screenshot saved to Gallery")),
@@ -1192,6 +1280,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 
   Widget _buildSettingsSheet() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Container(
         width: 400,
@@ -1234,6 +1323,20 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                   style: const TextStyle(color: Colors.blueAccent),
                 ),
                 onTap: _showQualitySelector,
+              ),
+              const Divider(color: Colors.white24),
+              SwitchListTile(
+                title: Text(
+                  l10n.autoSkipIntro,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                value: _isAutoSkipEnabled,
+                activeColor: Colors.blueAccent,
+                onChanged: (v) async {
+                  setState(() => _isAutoSkipEnabled = v);
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool(_prefAutoSkipKey, v);
+                },
               ),
               const SizedBox(height: 10),
               TextButton(

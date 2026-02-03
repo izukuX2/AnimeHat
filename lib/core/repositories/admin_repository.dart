@@ -284,4 +284,16 @@ class AdminRepository {
     }
     await batch.commit();
   }
+
+  /// log a system event
+  Future<void> logSystemEvent({
+    required String message,
+    String type = 'info',
+  }) async {
+    await _db.collection('logs').add({
+      'message': message,
+      'type': type,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
 }

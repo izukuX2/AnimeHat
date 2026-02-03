@@ -10,6 +10,7 @@ class Post {
   final DateTime createdAt;
   final List<String> likedBy;
   final int repliesCount;
+  final bool isSpoiler;
 
   Post({
     required this.id,
@@ -21,6 +22,7 @@ class Post {
     required this.createdAt,
     this.likedBy = const [],
     this.repliesCount = 0,
+    this.isSpoiler = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -33,6 +35,7 @@ class Post {
       'createdAt': FieldValue.serverTimestamp(),
       'likedBy': likedBy,
       'repliesCount': repliesCount,
+      'isSpoiler': isSpoiler,
     };
   }
 
@@ -48,6 +51,7 @@ class Post {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       likedBy: List<String>.from(data['likedBy'] ?? []),
       repliesCount: data['repliesCount'] ?? 0,
+      isSpoiler: data['isSpoiler'] ?? false,
     );
   }
 }

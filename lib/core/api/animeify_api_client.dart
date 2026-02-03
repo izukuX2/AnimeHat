@@ -21,11 +21,32 @@ class AnimeifyApiClient {
 
   dynamic _safeDecode(http.Response response, String endpoint) {
     try {
-      final body = response.body.trim();
+      var body = response.body.trim();
       if (body.isEmpty) {
         throw Exception(
           'Empty response from $endpoint (Status: ${response.statusCode})',
         );
+      }
+
+      // Handle PHP notices/errors prefixed to JSON
+      if (body.contains('<b>Notice</b>') || body.contains('<b>Warning</b>')) {
+        print(
+          'DEBUG: Server noise detected from $endpoint, attempting to clean...',
+        );
+        final startBrace = body.indexOf('{');
+        final startBracket = body.indexOf('[');
+        int start = -1;
+        if (startBrace != -1 && startBracket != -1) {
+          start = startBrace < startBracket ? startBrace : startBracket;
+        } else if (startBrace != -1) {
+          start = startBrace;
+        } else if (startBracket != -1) {
+          start = startBracket;
+        }
+
+        if (start != -1) {
+          body = body.substring(start);
+        }
       }
 
       if (body.startsWith('<')) {

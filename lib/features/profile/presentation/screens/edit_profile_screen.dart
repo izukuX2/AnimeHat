@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/repositories/user_repository.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -161,7 +162,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text("Edit Profile"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
+            icon: const Icon(LucideIcons.check),
             onPressed: _isLoading ? null : _saveProfile,
           ),
         ],
@@ -195,7 +196,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           child: _coverPhotoController.text.isEmpty
                               ? const Center(
                                   child: Icon(
-                                    Icons.add_a_photo,
+                                    LucideIcons.camera,
                                     size: 50,
                                     color: Colors.grey,
                                   ),
@@ -222,7 +223,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       : null,
                                   child: _photoUrlController.text.isEmpty
                                       ? const Icon(
-                                          Icons.person,
+                                          LucideIcons.user,
                                           size: 50,
                                           color: Colors.grey,
                                         )
@@ -239,7 +240,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
-                                    Icons.camera_alt,
+                                    LucideIcons.camera,
                                     color: Colors.white,
                                     size: 20,
                                   ),
@@ -260,7 +261,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.white),
+                            icon: const Icon(
+                              LucideIcons.edit3,
+                              color: Colors.white,
+                            ),
                             onPressed: () => _pickImage(false),
                             constraints: const BoxConstraints(),
                             padding: EdgeInsets.zero,
@@ -282,7 +286,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             decoration: const InputDecoration(
                               labelText: "Display Name",
                               border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.person),
+                              prefixIcon: Icon(LucideIcons.user),
                               helperText:
                                   "This name will appear to other users",
                             ),

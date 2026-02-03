@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/repositories/user_repository.dart';
@@ -22,6 +23,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/repositories/sync_repository.dart';
 import '../../../../core/widgets/banner_ad_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/repositories/admin_repository.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/widgets/animated_widgets.dart';
+import '../../../../core/services/recommendation_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,40 +42,58 @@ class _HomeScreenState extends State<HomeScreen>
   late Future<HomeData> _homeDataFuture;
   late Future<List<TrendingItem>> _trendingItemsFuture;
   late Future<List<Anime>> _moviesFuture;
+  late Future<List<Anime>> _recommendationsFuture;
+  late Future<List<BecauseYouWatched>> _becauseYouWatchedFuture;
   late Future<AppConfiguration> _configFuture;
   final _authRepository = AuthRepository();
   final _syncRepository = SyncRepository();
+  final _adminRepository = AdminRepository();
   int _currentIndex = 0;
   bool _showSyncProgress = true;
   bool _isDevMode = false;
   Stream<AppUser?>? _userStream;
 
   // Category definitions
-  final List<_CategoryItem> _categories = [
-    _CategoryItem(Icons.explore_rounded, 'Explore', 0, const Color(0xFF007AFF)),
+  List<_CategoryItem> _getCategories(AppLocalizations l10n) => [
     _CategoryItem(
-      Icons.play_circle_filled_rounded,
-      'Episodes',
+      LucideIcons.compass,
+      l10n.explore,
+      0,
+      const Color(0xFF007AFF),
+    ),
+    _CategoryItem(
+      LucideIcons.playCircle,
+      l10n.episodes,
       1,
       const Color(0xFFFF9500),
     ),
-    _CategoryItem(Icons.tv_rounded, 'Series', 2, const Color(0xFF34C759)),
-    _CategoryItem(Icons.movie_rounded, 'Movies', 3, const Color(0xFFAF52DE)),
-    _CategoryItem(Icons.search_rounded, 'Search', 4, const Color(0xFFFF3B30)),
+    _CategoryItem(LucideIcons.tv, l10n.series, 2, const Color(0xFF34C759)),
+    _CategoryItem(LucideIcons.film, l10n.movies, 3, const Color(0xFFAF52DE)),
+    _CategoryItem(LucideIcons.search, l10n.search, 4, const Color(0xFFFF3B30)),
     _CategoryItem(
-      Icons.people_rounded,
-      'Characters',
+      LucideIcons.users,
+      l10n.characters,
       5,
       const Color(0xFF5856D6),
     ),
     _CategoryItem(
-      Icons.bookmark_rounded,
-      'Library',
+      LucideIcons.bookmark,
+      l10n.library,
       6,
       const Color(0xFFFF2D55),
     ),
-    _CategoryItem(Icons.forum_rounded, 'Community', 7, const Color(0xFF007AFF)),
-    _CategoryItem(Icons.history_rounded, 'History', 8, const Color(0xFFFF9500)),
+    _CategoryItem(
+      LucideIcons.messageSquare,
+      l10n.community,
+      7,
+      const Color(0xFF007AFF),
+    ),
+    _CategoryItem(
+      LucideIcons.history,
+      l10n.history,
+      8,
+      const Color(0xFFFF9500),
+    ),
   ];
 
   @override
@@ -81,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen>
     _ensureUserExists();
     _initUserStream();
     _loadDevMode();
+    RecommendationService().initialize();
   }
 
   Future<void> _loadDevMode() async {
@@ -115,7 +139,31 @@ class _HomeScreenState extends State<HomeScreen>
       _trendingItemsFuture = _repository.getTrendingItems();
       _moviesFuture = _repository.getMovies();
       _configFuture = _repository.getConfiguration();
+      _fetchRecommendations();
     });
+  }
+
+  Future<void> _fetchRecommendations() async {
+    final rs = RecommendationService();
+    // We need all anime to filter from
+    final homeData = await _homeDataFuture;
+    final allAnime = <Anime>[
+      ...homeData.broadcast,
+      ...homeData.premiere,
+      ...homeData.latestEpisodes.map((e) => e.anime),
+    ];
+
+    // Remove duplicates
+    final seenIds = <String>{};
+    final uniqueAnime = allAnime.where((a) => seenIds.add(a.animeId)).toList();
+
+    _recommendationsFuture = Future.value(
+      rs.getAnimeRecommendations(uniqueAnime),
+    );
+
+    // For "Because you watched", it needs Map<String, dynamic>
+    final maps = uniqueAnime.map((a) => a.toMap()).toList();
+    _becauseYouWatchedFuture = rs.getBecauseYouWatchedRecommendations(maps);
   }
 
   @override
@@ -136,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen>
         drawer: _buildDrawer(context, isDark, l10n),
         body: Column(
           children: [
-            _buildSyncProgressBar(isDark),
+            _buildSyncProgressBar(isDark, l10n),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
@@ -181,8 +229,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   PreferredSizeWidget _buildAppBar(bool isDark, AppLocalizations l10n) {
     String title = '';
-    if (_currentIndex > 0 && _currentIndex < _categories.length) {
-      title = _categories[_currentIndex].label;
+    final categories = _getCategories(l10n);
+    if (_currentIndex > 0 && _currentIndex < categories.length) {
+      title = categories[_currentIndex].label;
     }
 
     return AppBar(
@@ -200,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'AnimeHat',
+                  l10n.appTitle,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -220,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen>
       actions: [
         IconButton(
           icon: Icon(
-            Icons.settings_rounded,
+            LucideIcons.settings,
             color: isDark ? Colors.white70 : Colors.black54,
           ),
           onPressed: () => Navigator.pushNamed(context, '/settings'),
@@ -238,8 +287,14 @@ class _HomeScreenState extends State<HomeScreen>
           parent: BouncingScrollPhysics(),
         ),
         slivers: [
+          // Admin Announcements
+          SliverToBoxAdapter(child: _buildAdminAnnouncements(isDark)),
+
           // Quick Categories
-          SliverToBoxAdapter(child: _buildQuickCategories(isDark)),
+          SliverToBoxAdapter(child: _buildQuickCategories(isDark, l10n)),
+
+          // Admin Featured section
+          SliverToBoxAdapter(child: _buildAdminFeatured(isDark)),
 
           // Trending Carousel
           SliverToBoxAdapter(
@@ -249,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen>
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const SizedBox(height: 20);
                 }
-                return _buildTrendingCarousel(snapshot.data!, isDark);
+                return _buildTrendingCarousel(snapshot.data!, isDark, l10n);
               },
             ),
           ),
@@ -259,9 +314,7 @@ class _HomeScreenState extends State<HomeScreen>
             future: _homeDataFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
-                );
+                return SliverToBoxAdapter(child: _buildShimmerLoading(isDark));
               }
 
               if (snapshot.hasError || !snapshot.hasData) {
@@ -272,66 +325,153 @@ class _HomeScreenState extends State<HomeScreen>
               return SliverList(
                 delegate: SliverChildListDelegate([
                   // Continue Watching
-                  _buildContinueWatching(isDark),
+                  FadeInWidget(
+                    delay: const Duration(milliseconds: 100),
+                    child: _buildContinueWatching(isDark, l10n),
+                  ),
 
                   // Latest Episodes Grid
                   if (homeData.latestEpisodes.isNotEmpty)
-                    _buildAnimeGridSection(
-                      title: '🔥 Latest Episodes',
-                      items: homeData.latestEpisodes.take(6).toList(),
-                      isDark: isDark,
-                      onSeeAll: () => setState(() => _currentIndex = 1),
-                      itemBuilder: (item) => AnimeCard(
-                        title: item.anime.enTitle,
-                        subtitle: item.anime.jpTitle,
-                        imageUrl: item.anime.thumbnail,
-                        episodeBadge: 'EP ${item.episode.episodeNumber}',
-                        rating: double.tryParse(item.anime.rating),
-                        isCompact: true,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/anime-details',
-                          arguments: item.anime,
+                    FadeInWidget(
+                      delay: const Duration(milliseconds: 200),
+                      child: _buildAnimeGridSection(
+                        title: '🔥 ${l10n.latestEpisodes}',
+                        items: homeData.latestEpisodes.take(6).toList(),
+                        isDark: isDark,
+                        seeAllLabel: l10n.seeAll,
+                        onSeeAll: () => setState(() => _currentIndex = 1),
+                        itemBuilder: (item) => AnimeCard(
+                          title: item.anime.enTitle,
+                          subtitle: item.anime.jpTitle,
+                          imageUrl: item.anime.thumbnail,
+                          episodeBadge: 'EP ${item.episode.episodeNumber}',
+                          rating: double.tryParse(item.anime.rating),
+                          isCompact: true,
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/anime-details',
+                            arguments: item.anime,
+                          ),
                         ),
                       ),
                     ),
 
+                  // AI Recommendations
+                  FutureBuilder<List<Anime>>(
+                    future: _recommendationsFuture,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return FadeInWidget(
+                        delay: const Duration(milliseconds: 300),
+                        child: _buildAnimeGridSection(
+                          title: '✨ Recommended For You',
+                          items: snapshot.data!.take(6).toList(),
+                          isDark: isDark,
+                          itemBuilder: (item) => AnimeCard(
+                            title: item.enTitle,
+                            imageUrl: item.thumbnail,
+                            isCompact: true,
+                            rating: double.tryParse(item.score),
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/anime-details',
+                              arguments: item,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Because You Watched
+                  FutureBuilder<List<BecauseYouWatched>>(
+                    future: _becauseYouWatchedFuture,
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return FadeInWidget(
+                        delay: const Duration(milliseconds: 400),
+                        child: Column(
+                          children: snapshot.data!.map((group) {
+                            return _buildAnimeGridSection(
+                              title:
+                                  '💙 Because you watched ${group.watchedAnimeName}',
+                              items: group.recommendations
+                                  .take(3)
+                                  .map((m) => Anime.fromJson(m))
+                                  .toList(),
+                              isDark: isDark,
+                              itemBuilder: (item) => AnimeCard(
+                                title: item.enTitle,
+                                imageUrl: item.thumbnail,
+                                isCompact: true,
+                                onTap: () => Navigator.pushNamed(
+                                  context,
+                                  '/anime-details',
+                                  arguments: item,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                  ),
+
                   // Broadcast Schedule
                   if (homeData.broadcast.isNotEmpty)
-                    _buildAnimeGridSection(
-                      title: '📅 Broadcast Schedule',
-                      items: homeData.broadcast.take(6).toList(),
-                      isDark: isDark,
-                      itemBuilder: (item) => AnimeCard(
-                        title: item.enTitle,
-                        imageUrl: item.thumbnail,
-                        isCompact: true,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/anime-details',
-                          arguments: item,
+                    FadeInWidget(
+                      delay: const Duration(milliseconds: 500),
+                      child: _buildAnimeGridSection(
+                        title: '📅 ${l10n.broadcastSchedule}',
+                        items: homeData.broadcast.take(6).toList(),
+                        isDark: isDark,
+                        seeAllLabel: l10n.seeAll,
+                        itemBuilder: (item) => AnimeCard(
+                          title: item.enTitle,
+                          imageUrl: item.thumbnail,
+                          isCompact: true,
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/anime-details',
+                            arguments: item,
+                          ),
                         ),
                       ),
                     ),
 
                   // Latest News
                   if (homeData.latestNews.isNotEmpty)
-                    _buildNewsSection(homeData.latestNews, isDark),
+                    FadeInWidget(
+                      delay: const Duration(milliseconds: 600),
+                      child: _buildNewsSection(
+                        homeData.latestNews,
+                        isDark,
+                        l10n,
+                      ),
+                    ),
 
                   // Current Season
                   if (homeData.premiere.isNotEmpty)
-                    _buildAnimeGridSection(
-                      title: '🌸 Current Season',
-                      items: homeData.premiere.take(6).toList(),
-                      isDark: isDark,
-                      itemBuilder: (item) => AnimeCard(
-                        title: item.enTitle,
-                        imageUrl: item.thumbnail,
-                        isCompact: true,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/anime-details',
-                          arguments: item,
+                    FadeInWidget(
+                      delay: const Duration(milliseconds: 700),
+                      child: _buildAnimeGridSection(
+                        title: '🌸 ${l10n.currentSeason}',
+                        items: homeData.premiere.take(6).toList(),
+                        isDark: isDark,
+                        seeAllLabel: l10n.seeAll,
+                        itemBuilder: (item) => AnimeCard(
+                          title: item.enTitle,
+                          imageUrl: item.thumbnail,
+                          isCompact: true,
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/anime-details',
+                            arguments: item,
+                          ),
                         ),
                       ),
                     ),
@@ -346,9 +486,10 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildQuickCategories(bool isDark) {
+  Widget _buildQuickCategories(bool isDark, AppLocalizations l10n) {
     // Check for modern theme specifically
     final isModern = Theme.of(context).primaryColor == const Color(0xFF00D1FF);
+    final categories = _getCategories(l10n);
 
     return Container(
       height: 110,
@@ -356,9 +497,9 @@ class _HomeScreenState extends State<HomeScreen>
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _categories.length,
+        itemCount: categories.length,
         itemBuilder: (context, index) {
-          final category = _categories[index];
+          final category = categories[index];
           final isSelected = _currentIndex == index;
 
           if (isModern) {
@@ -469,14 +610,18 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildTrendingCarousel(List<TrendingItem> items, bool isDark) {
+  Widget _buildTrendingCarousel(
+    List<TrendingItem> items,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
           child: Text(
-            '✨ Trending Now',
+            '✨ ${l10n.popularAnime}',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -595,6 +740,7 @@ class _HomeScreenState extends State<HomeScreen>
     required List<T> items,
     required bool isDark,
     required Widget Function(T) itemBuilder,
+    String? seeAllLabel,
     VoidCallback? onSeeAll,
   }) {
     return Column(
@@ -630,7 +776,7 @@ class _HomeScreenState extends State<HomeScreen>
                 GestureDetector(
                   onTap: onSeeAll,
                   child: Text(
-                    'See All',
+                    seeAllLabel ?? 'See All',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 13,
@@ -660,14 +806,18 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildNewsSection(List<NewsItem> news, bool isDark) {
+  Widget _buildNewsSection(
+    List<NewsItem> news,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
           child: Text(
-            '📰 Latest News',
+            '📰 ${l10n.latestNews}',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -676,7 +826,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
         SizedBox(
-          height: 160,
+          height: 190,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -694,7 +844,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildContinueWatching(bool isDark) {
+  Widget _buildContinueWatching(bool isDark, AppLocalizations l10n) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox.shrink();
 
@@ -717,13 +867,13 @@ class _HomeScreenState extends State<HomeScreen>
               child: Row(
                 children: [
                   const Icon(
-                    Icons.play_circle_outline_rounded,
+                    LucideIcons.playCircle,
                     size: 22,
                     color: AppColors.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Continue Watching',
+                    l10n.continueWatching,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -813,7 +963,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.play_arrow_rounded,
+                                  LucideIcons.play,
                                   color: Colors.white,
                                   size: 28,
                                 ),
@@ -891,6 +1041,7 @@ class _HomeScreenState extends State<HomeScreen>
     final shape = Theme.of(context).cardTheme.shape as RoundedRectangleBorder?;
     final borderRadius = shape?.borderRadius ?? BorderRadius.circular(12);
     final isMinimal = borderRadius == BorderRadius.zero;
+    final categories = _getCategories(l10n);
 
     return Drawer(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
@@ -899,7 +1050,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           children: [
             // User header
-            _buildDrawerHeader(context, isDark, isMinimal),
+            _buildDrawerHeader(context, isDark, isMinimal, l10n),
 
             Expanded(
               child: ListView(
@@ -908,10 +1059,10 @@ class _HomeScreenState extends State<HomeScreen>
                   horizontal: 12,
                 ),
                 children: [
-                  _buildDrawerSectionTitle(isDark, 'MY ACCOUNT'),
+                  _buildDrawerSectionTitle(isDark, l10n.myAccount),
                   _buildDrawerItem(
-                    icon: Icons.person_outline_rounded,
-                    label: 'Profile',
+                    icon: LucideIcons.user,
+                    label: l10n.username,
                     color: AppColors.primary,
                     isSelected: false,
                     isDark: isDark,
@@ -922,8 +1073,8 @@ class _HomeScreenState extends State<HomeScreen>
                     },
                   ),
                   _buildDrawerItem(
-                    icon: Icons.history_rounded,
-                    label: 'History',
+                    icon: LucideIcons.history,
+                    label: l10n.history,
                     color: Colors.orange,
                     isSelected: _currentIndex == 8,
                     isDark: isDark,
@@ -935,12 +1086,12 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
 
                   const SizedBox(height: 20),
-                  _buildDrawerSectionTitle(isDark, 'EXPLORE'),
+                  _buildDrawerSectionTitle(isDark, l10n.explore),
                   for (int i = 0; i <= 5; i++)
                     _buildDrawerItem(
-                      icon: _categories[i].icon,
-                      label: _categories[i].label,
-                      color: _categories[i].color,
+                      icon: categories[i].icon,
+                      label: categories[i].label,
+                      color: categories[i].color,
                       isSelected: _currentIndex == i,
                       isDark: isDark,
                       borderRadius: borderRadius,
@@ -951,10 +1102,10 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
 
                   const SizedBox(height: 20),
-                  _buildDrawerSectionTitle(isDark, 'MY LIBRARY'),
+                  _buildDrawerSectionTitle(isDark, l10n.myLibrary),
                   _buildDrawerItem(
-                    icon: Icons.bookmark_border_rounded,
-                    label: 'Library',
+                    icon: LucideIcons.bookmark,
+                    label: l10n.library,
                     color: Colors.pink,
                     isSelected: _currentIndex == 6,
                     isDark: isDark,
@@ -965,8 +1116,8 @@ class _HomeScreenState extends State<HomeScreen>
                     },
                   ),
                   _buildDrawerItem(
-                    icon: Icons.forum_outlined,
-                    label: 'Community',
+                    icon: LucideIcons.messageSquare,
+                    label: l10n.community,
                     color: Colors.blue,
                     isSelected: _currentIndex == 7,
                     isDark: isDark,
@@ -978,11 +1129,23 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
 
                   const SizedBox(height: 20),
-                  _buildDrawerSectionTitle(isDark, 'SETTINGS'),
+                  _buildDrawerSectionTitle(isDark, l10n.explore.toUpperCase()),
+                  _buildDrawerItem(
+                    icon: LucideIcons.calendar,
+                    label: l10n.broadcastSchedule,
+                    color: Colors.teal,
+                    isSelected: false,
+                    isDark: isDark,
+                    borderRadius: borderRadius,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/schedule');
+                    },
+                  ),
                   if (_isDevMode)
                     _buildDrawerItem(
-                      icon: Icons.admin_panel_settings_outlined,
-                      label: 'Admin Dashboard',
+                      icon: LucideIcons.shieldCheck,
+                      label: l10n.adminDashboard,
                       color: Colors.red,
                       isSelected: false,
                       isDark: isDark,
@@ -993,8 +1156,8 @@ class _HomeScreenState extends State<HomeScreen>
                       },
                     ),
                   _buildDrawerItem(
-                    icon: Icons.settings_outlined,
-                    label: 'App Settings',
+                    icon: LucideIcons.settings,
+                    label: l10n.settings,
                     color: Colors.grey,
                     isSelected: false,
                     isDark: isDark,
@@ -1005,8 +1168,8 @@ class _HomeScreenState extends State<HomeScreen>
                     },
                   ),
                   _buildDrawerItem(
-                    icon: Icons.logout_rounded,
-                    label: 'Sign Out',
+                    icon: LucideIcons.logOut,
+                    label: l10n.logout,
                     color: Colors.redAccent,
                     isSelected: false,
                     isDark: isDark,
@@ -1026,7 +1189,12 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildDrawerHeader(BuildContext context, bool isDark, bool isMinimal) {
+  Widget _buildDrawerHeader(
+    BuildContext context,
+    bool isDark,
+    bool isMinimal,
+    AppLocalizations l10n,
+  ) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: StreamBuilder<AppUser?>(
@@ -1056,7 +1224,11 @@ class _HomeScreenState extends State<HomeScreen>
                       : null,
                 ),
                 child: photoUrl == null || photoUrl.isEmpty
-                    ? const Icon(Icons.person, color: Colors.white, size: 36)
+                    ? const Icon(
+                        LucideIcons.user,
+                        color: Colors.white,
+                        size: 36,
+                      )
                     : null,
               ),
               const SizedBox(height: 12),
@@ -1070,7 +1242,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Sign In/Create Account',
+                l10n.signInOrCreateAccount,
                 style: TextStyle(
                   color: isDark ? Colors.white54 : Colors.black54,
                   fontSize: 13,
@@ -1149,7 +1321,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildSyncProgressBar(bool isDark) {
+  Widget _buildSyncProgressBar(bool isDark, AppLocalizations l10n) {
     return StreamBuilder<SyncProgress>(
       stream: _syncRepository.syncProgress,
       builder: (context, snapshot) {
@@ -1176,7 +1348,7 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Syncing: ${progress.currentCategory}',
+                  '${l10n.syncUserProfile}: ${progress.currentCategory}',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? Colors.white70 : Colors.black54,
@@ -1184,7 +1356,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close, size: 16),
+                icon: const Icon(LucideIcons.x, size: 16),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () => setState(() => _showSyncProgress = false),
@@ -1196,23 +1368,83 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildShimmerLoading(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Continue Watching shimmer
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: ShimmerLoading(width: 180, height: 24, borderRadius: 8),
+          ),
+          const ShimmerCarousel(height: 180),
+
+          const SizedBox(height: 32),
+
+          // Latest Episodes shimmer
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: ShimmerLoading(width: 200, height: 24, borderRadius: 8),
+          ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.65,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: 6,
+            itemBuilder: (context, index) {
+              return FadeInWidget(
+                delay: Duration(milliseconds: index * 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: ShimmerLoading(borderRadius: 12)),
+                    const SizedBox(height: 8),
+                    ShimmerLoading.text(width: double.infinity, height: 12),
+                    const SizedBox(height: 4),
+                    ShimmerLoading.text(width: 60, height: 10),
+                  ],
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 32),
+
+          // Broadcast Schedule shimmer
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: ShimmerLoading(width: 220, height: 24, borderRadius: 8),
+          ),
+          const ShimmerCarousel(height: 180, itemCount: 4),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOfflineView(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.wifi_off_rounded,
+            LucideIcons.wifiOff,
             size: 80,
             color: isDark ? Colors.white24 : Colors.black12,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'You are offline',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white70 : Colors.black54,
+              color: Colors.grey,
             ),
           ),
           const SizedBox(height: 8),
@@ -1223,7 +1455,7 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: _refreshData,
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(LucideIcons.refreshCw),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -1231,6 +1463,151 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAdminAnnouncements(bool isDark) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _adminRepository.getAnnouncements(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty)
+          return const SizedBox.shrink();
+
+        final ann = snapshot.data!;
+        return Column(
+          children: ann.map((a) {
+            Color bgColor = Colors.blue;
+            IconData icon = LucideIcons.info;
+
+            if (a['type'] == 'warning') {
+              bgColor = Colors.orange;
+              icon = LucideIcons.alertTriangle;
+            } else if (a['type'] == 'success') {
+              bgColor = Colors.green;
+              icon = LucideIcons.checkCircle;
+            }
+
+            return Container(
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: bgColor.withOpacity(isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: bgColor.withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, color: bgColor, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          a['title'] ?? '',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          a['content'] ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildAdminFeatured(bool isDark) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _adminRepository.getFeaturedAnime(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty)
+          return const SizedBox.shrink();
+
+        final featured = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Text(
+                '⭐ Admin\'s Choice',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: featured.length,
+                itemBuilder: (context, index) {
+                  final item = featured[index];
+                  return GestureDetector(
+                    onTap: () async {
+                      final anime = await _repository.getAnimeById(
+                        item['animeId'],
+                      );
+                      if (context.mounted) {
+                        Navigator.pushNamed(
+                          context,
+                          '/anime-details',
+                          arguments: anime,
+                        );
+                      }
+                    },
+                    child: Container(
+                      width: 140,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: AppNetworkImage(
+                                path: item['imageUrl'],
+                                category: 'featured',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item['title'],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

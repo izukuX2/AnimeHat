@@ -32,15 +32,25 @@ class UpdateService {
   }
 
   bool _isNewerVersion(String current, String latest) {
-    List<int> currentV = current.split('.').map(int.parse).toList();
-    List<int> latestV = latest.split('.').map(int.parse).toList();
+    try {
+      List<int> currentV = current
+          .split('.')
+          .map((e) => int.tryParse(e) ?? 0)
+          .toList();
+      List<int> latestV = latest
+          .split('.')
+          .map((e) => int.tryParse(e) ?? 0)
+          .toList();
 
-    for (var i = 0; i < latestV.length; i++) {
-      if (i >= currentV.length || latestV[i] > currentV[i]) {
-        return true;
-      } else if (latestV[i] < currentV[i]) {
-        return false;
+      for (var i = 0; i < latestV.length; i++) {
+        if (i >= currentV.length || latestV[i] > currentV[i]) {
+          return true;
+        } else if (latestV[i] < currentV[i]) {
+          return false;
+        }
       }
+    } catch (e) {
+      debugPrint('Error parsing versions: $e');
     }
     return false;
   }

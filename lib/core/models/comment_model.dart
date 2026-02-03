@@ -12,6 +12,7 @@ class Comment {
   final DateTime createdAt;
   final List<String> likedBy;
   final int repliesCount;
+  final bool isSpoiler;
 
   Comment({
     required this.id,
@@ -25,6 +26,7 @@ class Comment {
     required this.createdAt,
     this.likedBy = const [],
     this.repliesCount = 0,
+    this.isSpoiler = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -39,6 +41,7 @@ class Comment {
       'createdAt': FieldValue.serverTimestamp(),
       'likedBy': likedBy,
       'repliesCount': repliesCount,
+      'isSpoiler': isSpoiler,
     };
   }
 
@@ -56,6 +59,7 @@ class Comment {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       likedBy: List<String>.from(data['likedBy'] ?? []),
       repliesCount: data['repliesCount'] ?? 0,
+      isSpoiler: data['isSpoiler'] ?? false,
     );
   }
 }

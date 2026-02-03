@@ -3,6 +3,7 @@ import '../../../../core/repositories/post_repository.dart';
 import '../../../../core/models/post_model.dart';
 import '../../../../core/widgets/interaction_buttons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class CommunityView extends StatefulWidget {
@@ -66,6 +67,7 @@ class _CommunityViewState extends State<CommunityView>
   void _showCreatePostDialog(BuildContext context) {
     final contentController = TextEditingController();
     String selectedCategory = 'Global';
+    bool isSpoiler = false;
 
     showModalBottomSheet(
       context: context,
@@ -102,7 +104,7 @@ class _CommunityViewState extends State<CommunityView>
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCategory,
+                    value: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category',
                       border: OutlineInputBorder(),
@@ -113,6 +115,15 @@ class _CommunityViewState extends State<CommunityView>
                     onChanged: (value) {
                       setBottomSheetState(() => selectedCategory = value!);
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: Text(AppLocalizations.of(context)!.spoiler),
+                    value: isSpoiler,
+                    onChanged: (value) {
+                      setBottomSheetState(() => isSpoiler = value);
+                    },
+                    contentPadding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -148,6 +159,7 @@ class _CommunityViewState extends State<CommunityView>
                             createdAt: DateTime.now(),
                             likedBy: [],
                             repliesCount: 0,
+                            isSpoiler: isSpoiler,
                           ),
                         );
 
@@ -247,7 +259,11 @@ class _CommunityViewState extends State<CommunityView>
               ],
             ),
             const SizedBox(height: 12),
-            Text(post.content),
+            _SpoilerContent(
+              content: post.content,
+              isSpoiler: post.isSpoiler,
+              l10n: AppLocalizations.of(context)!,
+            ),
             const SizedBox(height: 12),
             InteractionButtons(
               isLiked: isLiked,
@@ -270,6 +286,66 @@ class _CommunityViewState extends State<CommunityView>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SpoilerContent extends StatefulWidget {
+  final String content;
+  final bool isSpoiler;
+  final AppLocalizations l10n;
+
+  const _SpoilerContent({
+    required this.content,
+    required this.isSpoiler,
+    required this.l10n,
+  });
+
+  @override
+  State<_SpoilerContent> createState() => _SpoilerContentState();
+}
+
+class _SpoilerContentState extends State<_SpoilerContent> {
+  late bool _showContent;
+
+  @override
+  void initState() {
+    super.initState();
+    _showContent = !widget.isSpoiler;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showContent) {
+      return Text(widget.content);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.red),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.l10n.spoiler,
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _showContent = true),
+            child: Text(widget.l10n.showContent),
+          ),
+        ],
       ),
     );
   }

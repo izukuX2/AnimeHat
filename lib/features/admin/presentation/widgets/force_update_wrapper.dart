@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../../../../core/repositories/admin_repository.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/services/update_service.dart';
+import '../../../../core/repositories/user_repository.dart';
+import '../../../../core/models/user_model.dart';
 
 /// Widget that checks for app updates and blocks if force update is required
 class ForceUpdateWrapper extends StatefulWidget {
@@ -20,38 +25,68 @@ class ForceUpdateWrapper extends StatefulWidget {
 
 class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
   final AdminRepository _adminRepo = AdminRepository();
+  final UserRepository _userRepo = UserRepository();
+  bool _bannerDismissed = false;
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<GlobalSettings>(
-      stream: _adminRepo.streamGlobalSettings(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return widget.child;
-        }
+    final user = firebase_auth.FirebaseAuth.instance.currentUser;
+    if (user == null) return widget.child;
 
-        final settings = snapshot.data!;
+    final bool isAuthAdmin =
+        user.displayName?.toLowerCase() == 'admin' ||
+        user.email == 'admin@animehat.com';
 
-        // Check maintenance mode first
-        if (settings.maintenanceMode) {
-          return _buildMaintenanceScreen(settings);
-        }
+    return StreamBuilder<AppUser?>(
+      stream: _userRepo.getUserStream(user.uid),
+      builder: (context, userSnapshot) {
+        final appUser = userSnapshot.data;
+        final bool isPotentiallyAdmin =
+            userSnapshot.connectionState == ConnectionState.waiting ||
+            (appUser?.isAdmin ?? false) ||
+            (appUser?.displayName.toLowerCase() == 'admin') ||
+            isAuthAdmin;
 
-        // Check if force update is needed
-        if (settings.forceUpdate &&
-            _isVersionLower(widget.currentVersion, settings.minVersion)) {
-          return _buildForceUpdateScreen(settings);
-        }
+        return StreamBuilder<GlobalSettings>(
+          stream: _adminRepo.streamGlobalSettings(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return widget.child;
+            }
 
-        // Check for optional update
-        if (_isVersionLower(widget.currentVersion, settings.latestVersion)) {
-          // Show snackbar or banner for optional update
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _showOptionalUpdateBanner(context, settings);
-          });
-        }
+            final settings = snapshot.data!;
 
-        return widget.child;
+            // Admins are exempt from Maintenance and Force Update blocks
+            if (isPotentiallyAdmin) {
+              return widget.child;
+            }
+
+            // Check maintenance mode first
+            if (settings.maintenanceMode) {
+              return _buildMaintenanceScreen(settings);
+            }
+
+            // Check if force update is needed
+            if (settings.forceUpdate &&
+                _isVersionLower(widget.currentVersion, settings.minVersion)) {
+              return _buildForceUpdateScreen(settings);
+            }
+
+            // Check for optional update
+            if (!_bannerDismissed &&
+                _isVersionLower(
+                  widget.currentVersion,
+                  settings.latestVersion,
+                )) {
+              // Show snackbar or banner for optional update
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _showOptionalUpdateBanner(context, settings);
+              });
+            }
+
+            return widget.child;
+          },
+        );
       },
     );
   }
@@ -88,7 +123,7 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.construction, size: 100, color: Colors.white),
+                const Icon(LucideIcons.hammer, size: 100, color: Colors.white),
                 const SizedBox(height: 32),
                 const Text(
                   'Maintenance Mode',
@@ -128,7 +163,11 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.system_update, size: 100, color: Colors.white),
+                const Icon(
+                  LucideIcons.refreshCcw,
+                  size: 100,
+                  color: Colors.white,
+                ),
                 const SizedBox(height: 32),
                 const Text(
                   'Update Required',
@@ -177,7 +216,7 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
                   onPressed: () => _launchUpdateUrl(settings.updateUrl),
-                  icon: const Icon(Icons.download),
+                  icon: const Icon(LucideIcons.download),
                   label: const Text('Update Now'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -206,10 +245,11 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
         content: Text('New version ${settings.latestVersion} available!'),
-        leading: const Icon(Icons.system_update, color: AppColors.primary),
+        leading: const Icon(LucideIcons.refreshCcw, color: AppColors.primary),
         actions: [
           TextButton(
             onPressed: () {
+              setState(() => _bannerDismissed = true);
               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
             },
             child: const Text('Later'),
@@ -227,8 +267,33 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
   }
 
   Future<void> _launchUpdateUrl(String url) async {
-    if (url.isEmpty) return;
-    final uri = Uri.parse(url);
+    String? finalUrl = url;
+
+    // If URL is empty, try to get the latest from GitHub
+    if (finalUrl.isEmpty) {
+      final updateService = UpdateService();
+      final releaseData = await updateService.checkUpdate();
+      if (releaseData != null) {
+        final assets = releaseData['assets'] as List<dynamic>?;
+        if (assets != null) {
+          finalUrl = await updateService.getCompatibleApkUrl(assets);
+        }
+      }
+    }
+
+    if (finalUrl == null || finalUrl.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Update URL not available. Please check GitHub.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final uri = Uri.parse(finalUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

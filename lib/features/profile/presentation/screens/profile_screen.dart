@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/repositories/user_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_network_image.dart';
-
+import '../../../../core/services/mal_service.dart';
+import '../../../../core/services/anilist_service.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -21,6 +24,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
   final UserRepository _userRepository = UserRepository();
+  final MalService _malService = MalService();
+  final AnilistService _anilistService = AnilistService();
   late TabController _tabController;
   AppUser? _cachedUser;
   bool _isLoading = true;
@@ -77,20 +82,21 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final isMe = currentUser?.uid == widget.uid;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _cachedUser == null
-          ? const Center(child: Text("User not found"))
+          ? Center(child: Text(l10n.userNotFound))
           : RefreshIndicator(
               onRefresh: _loadUserData,
-              child: _buildProfileContent(_cachedUser!, isMe),
+              child: _buildProfileContent(_cachedUser!, isMe, l10n),
             ),
     );
   }
 
-  Widget _buildProfileContent(AppUser user, bool isMe) {
+  Widget _buildProfileContent(AppUser user, bool isMe, AppLocalizations l10n) {
     return NestedScrollView(
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
@@ -137,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               : null,
                           child: user.photoUrl == null
                               ? const Icon(
-                                  Icons.person,
+                                  LucideIcons.user,
                                   size: 40,
                                   color: Colors.white70,
                                 )
@@ -169,7 +175,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                         if (isMe)
                           IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.white),
+                            icon: const Icon(
+                              LucideIcons.edit3,
+                              color: Colors.white,
+                            ),
                             onPressed: () =>
                                 _showEditProfileDialog(context, user),
                           ),
@@ -187,9 +196,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 labelColor: AppColors.primary,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: AppColors.primary,
-                tabs: const [
-                  Tab(text: "Overview"),
-                  Tab(text: "Activity"),
+                tabs: [
+                  Tab(text: l10n.overview),
+                  Tab(text: l10n.activity),
                 ],
               ),
             ),
@@ -199,56 +208,39 @@ class _ProfileScreenState extends State<ProfileScreen>
       },
       body: TabBarView(
         controller: _tabController,
-        children: [_buildOverviewTab(user), _buildActivityTab(user)],
+        children: [
+          _buildOverviewTab(user, isMe, l10n),
+          _buildActivityTab(user, l10n),
+        ],
       ),
     );
   }
 
-  Widget _buildOverviewTab(AppUser user) {
-    // Calculate stats
-    int totalEpisodes = user.history.length;
-    int totalMinutes = user.history.fold(
-      0,
-      (sum, item) => sum + (item.positionInMs ~/ 60000),
-    );
-    // Approximate, since we don't have exact duration for completed items if not in history fully,
-    // but relying on history item properties.
-    // Actually, history stores progress. Only finished items are 100%.
-    // A better metric might be completed entries in library.
-
-    int completedAnime = user.library
-        .where((e) => e.category == 'Completed')
-        .length;
-    int watchingAnime = user.library
-        .where((e) => e.category == 'Watching')
-        .length;
-
+  Widget _buildOverviewTab(AppUser user, bool isMe, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildStatCard("Anime Stats", [
-          _StatItem("Completed", "$completedAnime"),
-          _StatItem("Watching", "$watchingAnime"),
-          _StatItem("Episodes", "$totalEpisodes"),
-          _StatItem("Time", "${(totalMinutes / 60).toStringAsFixed(1)}h"),
-        ]),
-        const SizedBox(height: 16),
-        const Text(
-          "Social Links",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        _buildStatGrid(user, l10n),
+        const SizedBox(height: 24),
+        _buildAchievementsSection(
+          user,
+          l10n,
+          Theme.of(context).brightness == Brightness.dark,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          l10n.socialLinks,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         if (user.socialLinks.isEmpty)
-          const Text(
-            "No social links added.",
-            style: TextStyle(color: Colors.grey),
-          )
+          Text(l10n.noSocialLinks, style: const TextStyle(color: Colors.grey))
         else
           Wrap(
             spacing: 8,
             children: user.socialLinks.entries.map((e) {
               return ActionChip(
-                avatar: const Icon(Icons.link, size: 16),
+                avatar: const Icon(LucideIcons.link, size: 16),
                 label: Text(e.key),
                 onPressed: () {
                   // Open link logic
@@ -257,21 +249,55 @@ class _ProfileScreenState extends State<ProfileScreen>
             }).toList(),
           ),
         const SizedBox(height: 16),
-        const Text(
-          "Joined",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
         Text(
           DateFormat.yMMMd().format(user.joinDate),
           style: const TextStyle(color: Colors.grey),
         ),
+        if (isMe) ...[
+          const SizedBox(height: 24),
+          const Text(
+            "Account Integration",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: Image.asset(
+                'assets/images/mal_logo.png',
+                width: 24,
+                height: 24,
+                errorBuilder: (_, __, ___) => const Icon(LucideIcons.link),
+              ),
+              title: const Text("MyAnimeList"),
+              subtitle: const Text("Sync your watch list automatically"),
+              trailing: ElevatedButton(
+                onPressed: () => _malService.login(),
+                child: const Text("Connect"),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(
+                LucideIcons.externalLink,
+                color: Color(0xFF3DB4F2),
+              ),
+              title: const Text("AniList"),
+              subtitle: const Text("Track your anime progress"),
+              trailing: ElevatedButton(
+                onPressed: () => _anilistService.login(),
+                child: const Text("Connect"),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildActivityTab(AppUser user) {
+  Widget _buildActivityTab(AppUser user, AppLocalizations l10n) {
     if (user.activityLog.isEmpty) {
-      return const Center(child: Text("No recent activity"));
+      return Center(child: Text(l10n.noRecentActivity));
     }
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -279,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       itemBuilder: (context, index) {
         final activity = user.activityLog[index];
         return ListTile(
-          leading: const Icon(Icons.history, color: AppColors.primary),
+          leading: const Icon(LucideIcons.history, color: AppColors.primary),
           title: Text(activity.description),
           subtitle: Text(
             DateFormat.yMMMd().add_jm().format(activity.timestamp),
@@ -289,42 +315,206 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildStatCard(String title, List<_StatItem> items) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildStatGrid(AppUser user, AppLocalizations l10n) {
+    int totalEpisodes = user.history.length;
+    int totalMinutes = user.history.fold(
+      0,
+      (sum, item) => sum + (item.positionInMs ~/ 60000),
+    );
+    int completedAnime = user.library
+        .where((e) => e.category == 'Completed')
+        .length;
+    int watchingAnime = user.library
+        .where((e) => e.category == 'Watching')
+        .length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.animeStats,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.2,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            _buildStatItem(
+              l10n.completed,
+              "$completedAnime",
+              LucideIcons.checkCircle,
+              Colors.green,
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.map((item) {
-                return Column(
-                  children: [
-                    Text(
-                      item.value,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Text(
-                      item.label,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                );
-              }).toList(),
+            _buildStatItem(
+              l10n.watching,
+              "$watchingAnime",
+              LucideIcons.playCircle,
+              Colors.blue,
+            ),
+            _buildStatItem(
+              l10n.episodes,
+              "$totalEpisodes",
+              LucideIcons.layers,
+              Colors.orange,
+            ),
+            _buildStatItem(
+              l10n.time,
+              "${(totalMinutes / 60).toStringAsFixed(1)}h",
+              LucideIcons.clock,
+              Colors.purple,
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: color),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAchievementsSection(
+    AppUser user,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final badges = _calculateBadges(user);
+    if (badges.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Achievements',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 90,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: badges.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) =>
+                _buildBadgeItem(badges[index], isDark),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<_Badge> _calculateBadges(AppUser user) {
+    final badges = <_Badge>[];
+
+    // Member since
+    final days = DateTime.now().difference(user.joinDate).inDays;
+    if (days >= 365) {
+      badges.add(
+        const _Badge('Veteran', '🎉', 'Member for over a year', Colors.amber),
+      );
+    } else if (days >= 30) {
+      badges.add(
+        const _Badge('Regular', '📅', 'Member for over a month', Colors.blue),
+      );
+    }
+
+    // Episode count
+    if (user.history.length >= 1000) {
+      badges.add(
+        const _Badge('God-tier', '👑', 'Watched 1000+ episodes', Colors.purple),
+      );
+    } else if (user.history.length >= 100) {
+      badges.add(
+        const _Badge('Otaku', '🍱', 'Watched 100+ episodes', Colors.orange),
+      );
+    }
+
+    // Completionist
+    final completed = user.library
+        .where((e) => e.category == 'Completed')
+        .length;
+    if (completed >= 50) {
+      badges.add(
+        const _Badge('Elite', '🏆', 'Completed 50+ animes', Colors.red),
+      );
+    }
+
+    // Diverse tastes (just a placeholder logic)
+    if (user.favorites.length >= 10) {
+      badges.add(
+        const _Badge('Connoisseur', '💎', '10+ favorites added', Colors.cyan),
+      );
+    }
+
+    return badges;
+  }
+
+  Widget _buildBadgeItem(_Badge badge, bool isDark) {
+    return Container(
+      width: 100,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: badge.color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: badge.color.withOpacity(0.4), width: 1.5),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(badge.emoji, style: const TextStyle(fontSize: 24)),
+          const SizedBox(height: 4),
+          Text(
+            badge.name,
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -337,10 +527,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 }
 
-class _StatItem {
-  final String label;
-  final String value;
-  const _StatItem(this.label, this.value);
+class _Badge {
+  final String name;
+  final String emoji;
+  final String description;
+  final Color color;
+  const _Badge(this.name, this.emoji, this.description, this.color);
 }
 
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {

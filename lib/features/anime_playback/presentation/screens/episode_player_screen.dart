@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/utils/link_resolver.dart';
 import '../../../../core/api/animeify_api_client.dart';
 import '../../../../core/models/anime_model.dart';
@@ -7,6 +8,7 @@ import '../../../../core/repositories/user_repository.dart';
 import '../../../../core/repositories/anime_firestore_repository.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../anime_details/data/anime_repository.dart';
 import 'video_player_screen.dart';
 
@@ -52,7 +54,7 @@ class EpisodePlayerScreen extends StatefulWidget {
     // Fallback: If name text is short (likely a quality like "360p"), use it.
     // Otherwise if it's "mp4upload" etc, return "High Speed".
     if (name.length < 6) return name;
-    return "Auto (${name})";
+    return "Auto (${name})"; // Keeping as is or could use l10n.auto but this is static
   }
 
   const EpisodePlayerScreen({
@@ -121,11 +123,10 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
     } catch (e) {
       debugPrint('DEBUG: Link resolution failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to resolve video link. Please try again.'),
-          ),
-        );
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.failedToResolveLink)));
       }
     } finally {
       if (mounted) setState(() => _isResolving = false);
@@ -152,11 +153,12 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${widget.anime.enTitle} - Ep ${widget.episode.episodeNumber}',
+          '${widget.anime.enTitle} - ${l10n.epShort} ${widget.episode.episodeNumber}',
         ),
         backgroundColor: isDark ? AppColors.darkPrimary : AppColors.primary,
         foregroundColor: Colors.white,
@@ -170,7 +172,11 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return _buildErrorState(snapshot.error?.toString(), isDark);
+                return _buildErrorState(
+                  snapshot.error?.toString(),
+                  isDark,
+                  l10n,
+                );
               }
 
               final servers = snapshot.data!;
@@ -178,10 +184,7 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
               final availableServers = servers;
 
               if (availableServers.isEmpty) {
-                return _buildErrorState(
-                  'No servers available for this episode.',
-                  isDark,
-                );
+                return _buildErrorState(l10n.noServersAvailable, isDark, l10n);
               }
 
               return Center(
@@ -190,9 +193,9 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        'Select Quality',
-                        style: TextStyle(
+                      Text(
+                        l10n.selectQuality,
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -259,13 +262,13 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
               );
             },
           ),
-          if (_isResolving) _buildResolvingOverlay(),
+          if (_isResolving) _buildResolvingOverlay(l10n),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(String? error, bool isDark) {
+  Widget _buildErrorState(String? error, bool isDark, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -273,13 +276,13 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.warning_amber_rounded,
+              LucideIcons.alertTriangle,
               size: 64,
               color: Colors.orangeAccent,
             ),
             const SizedBox(height: 16),
             Text(
-              error ?? 'MediaFire link unavailable.',
+              error ?? l10n.mediaUnavailable,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -291,7 +294,7 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
                   widget.episode.episodeNumber,
                 );
               }),
-              child: const Text('RETRY'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -299,7 +302,7 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
     );
   }
 
-  Widget _buildResolvingOverlay() {
+  Widget _buildResolvingOverlay(AppLocalizations l10n) {
     return Container(
       color: Colors.black.withOpacity(0.7),
       child: Center(
@@ -315,9 +318,9 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
               children: [
                 const CircularProgressIndicator(color: Colors.blueAccent),
                 const SizedBox(height: 24),
-                const Text(
-                  'Starting Player',
-                  style: TextStyle(
+                Text(
+                  l10n.startingPlayer,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -325,8 +328,8 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Resolving direct link for fastest speed...',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  l10n.resolvingLink,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),

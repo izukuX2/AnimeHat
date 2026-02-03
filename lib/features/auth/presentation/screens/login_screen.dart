@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/auth_repository.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,9 +20,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.pleaseFillAllFields)));
       return;
     }
 
@@ -49,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: Container(
@@ -88,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
                 Text(
-                  "Welcome Back",
+                  l10n.welcomeBack,
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -97,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Sign in to continue your journey",
+                  l10n.signInToContinue,
                   style: TextStyle(
                     fontSize: 16,
                     color: (isDark ? Colors.white : Colors.black).withOpacity(
@@ -108,34 +112,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 50),
                 _buildTextField(
                   controller: _emailController,
-                  label: "Email Address",
-                  icon: Icons.email_outlined,
+                  label: l10n.emailAddress,
+                  icon: LucideIcons.mail,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 20),
                 _buildTextField(
                   controller: _passwordController,
-                  label: "Password",
-                  icon: Icons.lock_outline,
+                  label: l10n.password,
+                  icon: LucideIcons.lock,
                   isDark: isDark,
                   isPassword: true,
                 ),
                 const SizedBox(height: 40),
-                _buildLoginButton(isDark),
+                _buildLoginButton(isDark, l10n),
                 const SizedBox(height: 30),
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/signup'),
                     child: RichText(
                       text: TextSpan(
-                        text: "Don't have an account? ",
+                        text: "${l10n.dontHaveAccount} ",
                         style: TextStyle(
                           color: (isDark ? Colors.white : Colors.black)
                               .withOpacity(0.6),
                         ),
                         children: [
                           TextSpan(
-                            text: "Create one",
+                            text: l10n.createOne,
                             style: TextStyle(
                               color: isDark
                                   ? AppColors.darkPrimary
@@ -188,9 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
+                    _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
                     color: (isDark ? Colors.white : Colors.black).withOpacity(
                       0.5,
                     ),
@@ -209,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton(bool isDark) {
+  Widget _buildLoginButton(bool isDark, AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
       height: 60,
@@ -224,9 +226,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                "Login",
-                style: TextStyle(
+            : Text(
+                l10n.login,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

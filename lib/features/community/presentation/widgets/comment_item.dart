@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/models/comment_model.dart';
 import '../../../../core/repositories/comment_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/interaction_buttons.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
@@ -27,6 +29,7 @@ class _CommentItemState extends State<CommentItem> {
   bool _showReplies = false;
   List<Comment> _replies = [];
   bool _loadingReplies = false;
+  bool _revealed = false;
   final CommentRepository _repository = CommentRepository();
 
   Future<void> _toggleReplies() async {
@@ -62,6 +65,7 @@ class _CommentItemState extends State<CommentItem> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUser = FirebaseAuth.instance.currentUser;
     final isLiked =
@@ -87,7 +91,11 @@ class _CommentItemState extends State<CommentItem> {
                       ? NetworkImage(widget.comment.authorPhotoUrl!)
                       : null,
                   child: widget.comment.authorPhotoUrl == null
-                      ? const Icon(Icons.person, size: 20, color: Colors.white)
+                      ? const Icon(
+                          LucideIcons.user,
+                          size: 20,
+                          color: Colors.white,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 8),
@@ -115,7 +123,7 @@ class _CommentItemState extends State<CommentItem> {
               ],
             ),
             const SizedBox(height: 8),
-            Text(widget.comment.content),
+            _buildContent(context, isDark),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -132,7 +140,7 @@ class _CommentItemState extends State<CommentItem> {
                   TextButton(
                     onPressed: _toggleReplies,
                     child: Text(
-                      _showReplies ? "Hide Replies" : "View Replies",
+                      _showReplies ? l10n.hideReplies : l10n.viewReplies,
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
@@ -163,5 +171,56 @@ class _CommentItemState extends State<CommentItem> {
 
   String _formatDate(DateTime date) {
     return "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+  }
+
+  Widget _buildContent(BuildContext context, bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
+    if (widget.comment.isSpoiler && !_revealed) {
+      return InkWell(
+        onTap: () => setState(() => _revealed = true),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.grey[800]!.withOpacity(0.5)
+                : Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.eyeOff, size: 16, color: Colors.amber),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.spoiler,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      l10n.showContent,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.grey[300] : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Text(widget.comment.content);
   }
 }

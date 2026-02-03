@@ -1,0 +1,80 @@
+import 'package:dio/dio.dart';
+import '../../../../core/models/anime_model.dart';
+
+class ScheduleRepository {
+  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://api.jikan.moe/v4'));
+
+  Future<Map<String, List<Anime>>> getWeeklySchedule() async {
+    final Map<String, List<Anime>> schedule = {
+      'monday': [],
+      'tuesday': [],
+      'wednesday': [],
+      'thursday': [],
+      'friday': [],
+      'saturday': [],
+      'sunday': [],
+    };
+
+    try {
+      await Future.wait(
+        schedule.keys.map((day) async {
+          try {
+            final response = await _dio.get(
+              '/schedules',
+              queryParameters: {'filter': day},
+            );
+            if (response.statusCode == 200) {
+              final List data = response.data['data'];
+              print(
+                'DEBUG: Jikan Schedule for $day returned ${data.length} items',
+              );
+              schedule[day] = data
+                  .map((item) => _mapJikanToAnime(item))
+                  .toList();
+            }
+          } catch (e) {
+            print('DEBUG: Error fetching schedule for $day: $e');
+          }
+        }),
+      );
+      return schedule;
+    } catch (e) {
+      print('DEBUG: ScheduleRepository Overall Error: $e');
+      return schedule;
+    }
+  }
+
+  Anime _mapJikanToAnime(Map<String, dynamic> item) {
+    return Anime(
+      id: item['mal_id'].toString(),
+      animeId: item['mal_id'].toString(),
+      enTitle: item['title'] ?? 'Unknown',
+      jpTitle: item['title_japanese'] ?? '',
+      arTitle: '',
+      synonyms: '',
+      genres:
+          (item['genres'] as List?)
+              ?.map((g) => g['name'].toString())
+              .join(', ') ??
+          '',
+      season: item['season'] ?? '',
+      premiered: item['aired']?['string'] ?? '',
+      aired: item['aired']?['string'] ?? '',
+      broadcast: item['broadcast']?['string'] ?? '',
+      duration: item['duration'] ?? '',
+      thumbnail: item['images']?['jpg']?['large_image_url'] ?? '',
+      trailer: '',
+      ytTrailer: item['trailer']?['youtube_id'] ?? '',
+      creators: '',
+      status: item['status'] ?? '',
+      episodes: item['episodes']?.toString() ?? '?',
+      score: item['score']?.toString() ?? '0',
+      rank: item['rank']?.toString() ?? '0',
+      popularity: item['popularity']?.toString() ?? '0',
+      rating: item['rating']?.toString() ?? '',
+      type: item['type'] ?? '',
+      views: '0',
+      malId: item['mal_id'].toString(),
+    );
+  }
+}

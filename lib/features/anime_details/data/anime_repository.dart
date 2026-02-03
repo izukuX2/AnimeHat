@@ -2,10 +2,12 @@ import '../../../core/api/animeify_api_client.dart';
 import '../../../core/models/anime_model.dart';
 import '../../../core/repositories/anime_firestore_repository.dart';
 import '../../../../core/services/supabase_archive_service.dart';
+import '../../../../core/database/database_helper.dart';
 
 class AnimeRepository {
   final AnimeifyApiClient apiClient;
   final AnimeFirestoreRepository _firestore = AnimeFirestoreRepository();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   AnimeRepository({required this.apiClient});
 
@@ -48,9 +50,16 @@ class AnimeRepository {
     // Save to cache if metadata is provided
     if (animeMetadata != null) {
       await _firestore.saveAnime(animeMetadata, details);
+      await _dbHelper.insertAnime(
+        animeMetadata,
+      ); // Cache locally for LibraryView
     }
 
     return details;
+  }
+
+  Future<void> cacheMetadata(Anime anime) async {
+    await _dbHelper.insertAnime(anime);
   }
 
   Future<List<Episode>> getEpisodes(String animeId) async {

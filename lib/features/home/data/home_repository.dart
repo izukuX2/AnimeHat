@@ -119,25 +119,42 @@ class HomeRepository {
   }
 
   Future<Anime> getAnimeById(String animeId) async {
+    // 1. Try cache first for instant metadata availability
+    final cached = await _dbHelper.getAnime(animeId);
+    if (cached != null) {
+      // Background update to keep it fresh without blocking UI
+      _updateAnimeCache(animeId);
+      return cached;
+    }
+
+    // 2. Fallback to API if not cached
     try {
       var json = await apiClient.getAnimeDetails(animeId);
       // Ensure the ID is present in the JSON so the model is valid
       if (json['AnimeId'] == null && json['animeId'] == null) {
-        // Create a mutable copy if needed, but safeDecode usually returns a standard map
         json = Map<String, dynamic>.from(json);
         json['AnimeId'] = animeId;
       }
       final anime = Anime.fromJson(json);
       await _dbHelper.insertAnime(anime);
-
-      // Archive to Supabase (Fire-and-forget)
       SupabaseArchiveService.archiveAnime(anime);
-
       return anime;
     } catch (e) {
-      final cached = await _dbHelper.getAnime(animeId);
-      if (cached != null) return cached;
       rethrow;
+    }
+  }
+
+  Future<void> _updateAnimeCache(String animeId) async {
+    try {
+      var json = await apiClient.getAnimeDetails(animeId);
+      if (json['AnimeId'] == null && json['animeId'] == null) {
+        json = Map<String, dynamic>.from(json);
+        json['AnimeId'] = animeId;
+      }
+      final anime = Anime.fromJson(json);
+      await _dbHelper.insertAnime(anime);
+    } catch (e) {
+      print("Background cache update failed for $animeId: $e");
     }
   }
 

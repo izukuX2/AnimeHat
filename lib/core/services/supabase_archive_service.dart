@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/models/anime_model.dart';
 import '../../core/models/character_model.dart';
+import '../../core/repositories/admin_repository.dart';
 
 class SupabaseArchiveService {
   static final _supabase = Supabase.instance.client;
@@ -24,8 +25,16 @@ class SupabaseArchiveService {
         'last_updated': DateTime.now().toIso8601String(),
       }, onConflict: 'id'); // Ensure 'id' is the conflict constraint
       debugPrint('[Supabase] Archived Anime: ${anime.enTitle}');
+      AdminRepository().logSystemEvent(
+        message: 'Archived Anime: ${anime.enTitle}',
+        type: 'success',
+      );
     } catch (e) {
       debugPrint('[Supabase] Failed to archive anime ${anime.animeId}: $e');
+      AdminRepository().logSystemEvent(
+        message: 'Failed to archive anime ${anime.animeId}: $e',
+        type: 'error',
+      );
     }
   }
 
@@ -53,8 +62,16 @@ class SupabaseArchiveService {
       debugPrint(
         '[Supabase] Archived ${episodes.length} episodes for $animeId',
       );
+      AdminRepository().logSystemEvent(
+        message: 'Archived ${episodes.length} episodes for $animeId',
+        type: 'success',
+      );
     } catch (e) {
       debugPrint('[Supabase] Failed to archive episodes for $animeId: $e');
+      AdminRepository().logSystemEvent(
+        message: 'Failed to archive episodes for $animeId: $e',
+        type: 'error',
+      );
     }
   }
 
@@ -69,19 +86,8 @@ class SupabaseArchiveService {
     final episodeId = '${animeId}_$episodeNumber';
 
     try {
-      // For servers, we might want to just insert them.
-      // Upserting is tricky without a unique ID for the server link itself.
-      // Strategy: Delete existing for this episode and re-insert to keep it fresh.
-
-      // 1. Delete old servers for this episode (Optional, but cleaner)
-      // Note: This requires a policy or setup that allows deletion.
-      // For now, let's just insert and rely on generated ID.
-      // Or better, check if we can make a unique hash.
-
-      // Simpler approach: Just insert. Repeated inserts might duplicate data over time.
-      // Let's use a composite key if possible or just log them.
-      // Ideally, we want unique servers.
-      // Let's assume (episode_id, server_name) is unique-ish? checking server_url is better.
+      // Clean up existing servers for this episode to prevent duplicates
+      await _supabase.from('servers').delete().eq('episode_id', episodeId);
 
       final List<Map<String, dynamic>> records = servers.map((s) {
         return {
@@ -93,9 +99,6 @@ class SupabaseArchiveService {
         };
       }).toList();
 
-      // We won't use upsert for servers right now unless we have a unique constraint.
-      // If the user ran the SQL I provided, 'id' is auto-gen.
-      // Let's just insert. Duplicate archival might happen but better than missing data.
       await _supabase.from('servers').insert(records);
 
       debugPrint(
@@ -135,8 +138,26 @@ class SupabaseArchiveService {
 
       await _supabase.from('characters').upsert(records, onConflict: 'id');
       debugPrint('[Supabase] Archived ${characters.length} characters');
+      AdminRepository().logSystemEvent(
+        message: 'Archived ${characters.length} characters',
+        type: 'success',
+      );
     } catch (e) {
       debugPrint('[Supabase] Failed to archive characters: $e');
+      AdminRepository().logSystemEvent(
+        message: 'Failed to archive characters: $e',
+        type: 'error',
+      );
+    }
+  }
+
+  /// Check if a table exists (Quick check via RPC or simple query)
+  static Future<bool> checkTableExists(String tableName) async {
+    try {
+      await _supabase.from(tableName).select().limit(1);
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 }

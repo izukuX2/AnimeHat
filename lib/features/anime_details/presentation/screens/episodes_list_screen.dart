@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/models/anime_model.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/repositories/user_repository.dart';
 import '../../../auth/data/auth_repository.dart';
 
@@ -79,22 +81,29 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
           if (mounted) {
             final resume = await showDialog<bool>(
               context: context,
-              builder: (context) => AlertDialog(
-                title: const Text("Resume Playing?"),
-                content: Text(
-                  "You stopped at ${Duration(milliseconds: historyItem.positionInMs).toString().split('.').first}. Do you want to resume?",
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text("Start Over"),
+              builder: (context) {
+                final l10n = AppLocalizations.of(context)!;
+                return AlertDialog(
+                  title: Text(l10n.resumePlaying),
+                  content: Text(
+                    l10n.resumePrompt(
+                      Duration(
+                        milliseconds: historyItem.positionInMs,
+                      ).toString().split('.').first,
+                    ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text("Resume"),
-                  ),
-                ],
-              ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text(l10n.startOver),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(l10n.resume),
+                    ),
+                  ],
+                );
+              },
             );
             if (resume == true) {
               startAtMs = historyItem.positionInMs;
@@ -125,9 +134,11 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
         ? _paginatedEpisodes[_currentPage]
         : <Episode>[];
 
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.anime.enTitle} - Episodes'),
+        title: Text('${widget.anime.enTitle} - ${l10n.episodes}'),
         elevation: 0,
         backgroundColor: Colors.transparent,
       ),
@@ -176,7 +187,7 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
           // Episodes list
           Expanded(
             child: currentEpisodes.isEmpty
-                ? const Center(child: Text('No episodes found.'))
+                ? Center(child: Text(l10n.noEpisodesFound))
                 : ListView.separated(
                     padding: const EdgeInsets.all(20),
                     itemCount: currentEpisodes.length,
@@ -201,7 +212,7 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
                             vertical: 8,
                           ),
                           title: Text(
-                            "Episode ${ep.episodeNumber}",
+                            "${l10n.episodePrefix}${ep.episodeNumber}",
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -217,7 +228,7 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
                             child: IconButton(
                               onPressed: () => _playEpisode(ep),
                               icon: const Icon(
-                                Icons.play_arrow_rounded,
+                                LucideIcons.play,
                                 color: Colors.white,
                               ),
                             ),

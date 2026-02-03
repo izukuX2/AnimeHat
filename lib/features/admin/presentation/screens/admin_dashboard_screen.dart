@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/repositories/admin_repository.dart';
+import '../../../../core/services/supabase_archive_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/repositories/user_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/ad_service.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -37,7 +41,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     _verifyAdminAccess();
     _loadSettings();
   }
@@ -56,8 +60,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       );
       final isNameAdmin = appUser?.displayName.toLowerCase() == 'admin';
       final isAdminFlag = appUser?.isAdmin ?? false;
+      final isAuthAdmin =
+          user.displayName?.toLowerCase() == 'admin' ||
+          user.email == 'admin@animehat.com';
 
-      if (!isNameAdmin && !isAdminFlag) {
+      if (!isNameAdmin && !isAdminFlag && !isAuthAdmin) {
         _closeAccess();
       }
     } catch (e) {
@@ -67,13 +74,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
 
   void _closeAccess() {
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Access Denied: You do not have permission to view this page.',
-          ),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(l10n.accessDenied), backgroundColor: Colors.red),
       );
       Navigator.of(context).pop();
     }
@@ -93,9 +96,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       });
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error loading settings: $e')));
+        ).showSnackBar(SnackBar(content: Text("${l10n.errorPrefix}: $e")));
       }
     } finally {
       if (mounted && !silent) setState(() => _isLoading = false);
@@ -120,6 +124,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.grey[50],
       body: _isLoading
@@ -132,9 +137,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   pinned: true,
                   elevation: 0,
                   backgroundColor: isDark ? Colors.black : Colors.white,
-                  title: const Text(
-                    'Admin Dashboard',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  title: Text(
+                    l10n.adminDashboard,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                   centerTitle: true,
                   bottom: TabBar(
@@ -144,13 +152,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                     unselectedLabelColor: Colors.grey,
                     indicatorColor: AppColors.primary,
                     indicatorSize: TabBarIndicatorSize.label,
-                    tabs: const [
-                      Tab(text: 'Stats'),
-                      Tab(text: 'General'),
-                      Tab(text: 'Ads'),
-                      Tab(text: 'Featured'),
-                      Tab(text: 'Users'),
-                      Tab(text: 'Announce'),
+                    tabs: [
+                      Tab(text: l10n.stats),
+                      Tab(text: l10n.general),
+                      Tab(text: l10n.updates),
+                      Tab(text: l10n.ads),
+                      Tab(text: l10n.featured),
+                      Tab(text: l10n.users),
+                      Tab(text: l10n.announce),
                     ],
                   ),
                 ),
@@ -158,12 +167,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildStatsTab(isDark),
-                      _buildGeneralTab(isDark),
-                      _buildAdsTab(isDark),
-                      _buildFeaturedTab(isDark),
-                      _buildUsersTab(isDark),
-                      _buildAnnouncementsTab(isDark),
+                      _buildStatsTab(isDark, l10n),
+                      _buildGeneralTab(isDark, l10n),
+                      _buildUpdatesTab(isDark, l10n),
+                      _buildAdsTab(isDark, l10n),
+                      _buildFeaturedTab(isDark, l10n),
+                      _buildUsersTab(isDark, l10n),
+                      _buildAnnouncementsTab(isDark, l10n),
                     ],
                   ),
                 ),
@@ -172,7 +182,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildStatsTab(bool isDark) {
+  Widget _buildStatsTab(bool isDark, AppLocalizations l10n) {
     return FutureBuilder<Map<String, int>>(
       future: _adminRepo.getAppStats(),
       builder: (context, snapshot) {
@@ -188,30 +198,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               runSpacing: 16,
               children: [
                 _buildStatCard(
-                  'Total Users',
+                  l10n.totalUsers,
                   stats['users'].toString(),
-                  Icons.people,
+                  LucideIcons.users,
                   Colors.blue,
                   isDark,
                 ),
                 _buildStatCard(
-                  'Total Posts',
+                  l10n.totalPosts,
                   stats['posts'].toString(),
-                  Icons.forum,
+                  LucideIcons.messageSquare,
                   Colors.green,
                   isDark,
                 ),
                 _buildStatCard(
-                  'Featured',
+                  l10n.featured,
                   stats['featured'].toString(),
-                  Icons.star,
+                  LucideIcons.star,
                   Colors.amber,
                   isDark,
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            _buildLogSection(isDark),
+            _buildDiagnosticsSection(isDark, l10n),
+            const SizedBox(height: 24),
+            _buildLogSection(isDark, l10n),
           ],
         );
       },
@@ -251,26 +263,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildLogSection(bool isDark) {
+  Widget _buildLogSection(bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'System Logs',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              l10n.systemLogs,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
               onPressed: () async {
                 await _adminRepo.clearLogs();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Logs cleared')));
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(l10n.logsCleared)));
+                }
               },
-              icon: const Icon(Icons.delete_sweep, size: 18),
-              label: const Text('Clear'),
+              icon: const Icon(LucideIcons.trash2, size: 18),
+              label: Text(l10n.clear),
             ),
           ],
         ),
@@ -278,8 +292,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: _adminRepo.getSystemLogs(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData)
-              return const Center(child: Text('No logs found'));
+            if (!snapshot.hasData) return Center(child: Text(l10n.noLogsFound));
             final logs = snapshot.data!;
             return Container(
               height: 300,
@@ -293,11 +306,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                 itemBuilder: (context, index) {
                   final log = logs[index];
                   return Text(
-                    '[${log['type']}] ${log['message']}',
+                    '[${log['type']?.toString().toUpperCase()}] ${log['message']}',
                     style: TextStyle(
-                      fontSize: 11,
+                      color: _getLogColor(log['type']?.toString() ?? ''),
+                      fontSize: 12,
                       fontFamily: 'monospace',
-                      color: isDark ? Colors.white70 : Colors.black87,
                     ),
                   );
                 },
@@ -309,107 +322,182 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildGeneralTab(bool isDark) {
+  Widget _buildDiagnosticsSection(bool isDark, AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.systemDiagnostics,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton.icon(
+          onPressed: () => _runDiagnostics(l10n),
+          icon: const Icon(LucideIcons.activity),
+          label: Text(l10n.runIntegrityCheck),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _runDiagnostics(AppLocalizations l10n) async {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.runningDiagnostics)));
+
+    int errors = 0;
+    // 1. Check Supabase Tables
+    final hasServers = await SupabaseArchiveService.checkTableExists('servers');
+    final hasAnimes = await SupabaseArchiveService.checkTableExists('animes');
+    final hasCharacters = await SupabaseArchiveService.checkTableExists(
+      'characters',
+    );
+
+    if (!hasServers || !hasAnimes || !hasCharacters) {
+      errors++;
+      _adminRepo.logSystemEvent(
+        message: 'DIAGNOSTICS: Missing Supabase tables detected!',
+        type: 'error',
+      );
+    }
+
+    // 2. Check Firestore Indices (Simplified check)
+    try {
+      await FirebaseFirestore.instance
+          .collection('announcements')
+          .where('isActive', isEqualTo: true)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+    } catch (e) {
+      if (e.toString().contains('requires an index')) {
+        errors++;
+        _adminRepo.logSystemEvent(
+          message: 'DIAGNOSTICS: Firestore Index missing for announcements!',
+          type: 'error',
+        );
+      }
+    }
+
+    if (errors == 0) {
+      _adminRepo.logSystemEvent(
+        message: 'DIAGNOSTICS: All systems operational.',
+        type: 'success',
+      );
+    }
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.diagnosticsComplete),
+          content: Text(
+            errors == 0
+                ? 'All core systems are operational.'
+                : 'Found $errors potential issues. Check system logs for details.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Color _getLogColor(String type) {
+    switch (type) {
+      case 'error':
+        return Colors.red;
+      case 'success':
+        return Colors.green;
+      case 'warning':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildGeneralTab(bool isDark, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildAdminSection(
-          title: 'Maintenance',
+          title: l10n.maintenance,
           isDark: isDark,
           child: Column(
             children: [
               SwitchListTile(
-                title: const Text('Maintenance Mode'),
+                title: Text(l10n.maintenanceMode),
                 value: _settings?.maintenanceMode ?? false,
                 onChanged: (val) async {
-                  await _adminRepo.toggleMaintenanceMode(val);
-                  _loadSettings(silent: true);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Maintenance Mode: ${val ? 'On' : 'Off'}',
+                  try {
+                    await _adminRepo.toggleMaintenanceMode(val);
+                    _loadSettings(silent: true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Maintenance Mode: ${val ? 'On' : 'Off'}',
+                          ),
+                          backgroundColor: val ? Colors.orange : Colors.green,
                         ),
-                      ),
-                    );
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
               ),
               TextField(
                 controller: _maintenanceMessageController,
-                decoration: const InputDecoration(labelText: 'Message'),
+                decoration: InputDecoration(
+                  labelText: l10n.maintenanceMessage,
+                  hintText: 'e.g. App is under maintenance...',
+                ),
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () async {
-                  await _adminRepo.toggleMaintenanceMode(
-                    _settings?.maintenanceMode ?? false,
-                    message: _maintenanceMessageController.text,
-                  );
-                  _loadSettings(silent: true);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Maintenance message updated'),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Update Message'),
-              ),
-            ],
-          ),
-        ),
-        _buildAdminSection(
-          title: 'App Updates',
-          isDark: isDark,
-          child: Column(
-            children: [
-              TextField(
-                controller: _latestVersionController,
-                decoration: const InputDecoration(labelText: 'Latest Version'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _minVersionController,
-                decoration: const InputDecoration(labelText: 'Min Version'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _updateUrlController,
-                decoration: const InputDecoration(labelText: 'Update URL'),
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                title: const Text('Force Update'),
-                value: _settings?.forceUpdate ?? false,
-                onChanged: (val) async {
-                  await _adminRepo.setForceUpdate(
-                    latestVersion: _latestVersionController.text,
-                    minVersion: _minVersionController.text,
-                    updateUrl: _updateUrlController.text,
-                    force: val,
-                  );
-                  _loadSettings(silent: true);
-                },
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  await _adminRepo.setForceUpdate(
-                    latestVersion: _latestVersionController.text,
-                    minVersion: _minVersionController.text,
-                    updateUrl: _updateUrlController.text,
-                    force: _settings?.forceUpdate ?? false,
-                  );
-                  _loadSettings(silent: true);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Update settings saved')),
-                    );
-                  }
-                },
-                child: const Text('Save Update Settings'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await _adminRepo.toggleMaintenanceMode(
+                        _settings?.maintenanceMode ?? false,
+                        message: _maintenanceMessageController.text,
+                      );
+                      _loadSettings(silent: true);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Maintenance message updated'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(l10n.updateMessage),
+                ),
               ),
             ],
           ),
@@ -418,15 +506,138 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildAdsTab(bool isDark) {
+  Widget _buildUpdatesTab(bool isDark, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildAdminSection(
-          title: 'Ad Management',
+          title: l10n.appUpdates,
+          isDark: isDark,
+          child: Column(
+            children: [
+              TextField(
+                controller: _latestVersionController,
+                decoration: InputDecoration(
+                  labelText: l10n.latestVersion,
+                  hintText: 'e.g. 1.0.5',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _minVersionController,
+                decoration: InputDecoration(
+                  labelText: l10n.minVersion,
+                  hintText: 'e.g. 1.0.0',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _updateUrlController,
+                decoration: InputDecoration(
+                  labelText: l10n.directUpdateUrl,
+                  hintText: 'https://...',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _updateNotesController,
+                decoration: InputDecoration(
+                  labelText: l10n.updateNotes,
+                  hintText: 'What\'s new in this version...',
+                ),
+                maxLines: 4,
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                title: Text(l10n.forceUpdate),
+                subtitle: const Text('Users below Min Version will be blocked'),
+                value: _settings?.forceUpdate ?? false,
+                onChanged: (val) async {
+                  try {
+                    await _adminRepo.setForceUpdate(
+                      latestVersion: _latestVersionController.text,
+                      minVersion: _minVersionController.text,
+                      updateUrl: _updateUrlController.text,
+                      notes: _updateNotesController.text,
+                      force: val,
+                    );
+                    _loadSettings(silent: true);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Force Update: ${val ? 'ON' : 'OFF'}'),
+                          backgroundColor: val ? Colors.red : Colors.green,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await _adminRepo.setForceUpdate(
+                        latestVersion: _latestVersionController.text,
+                        minVersion: _minVersionController.text,
+                        updateUrl: _updateUrlController.text,
+                        notes: _updateNotesController.text,
+                        force: _settings?.forceUpdate ?? false,
+                      );
+                      _loadSettings(silent: true);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Update settings saved successfully'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(LucideIcons.save),
+                  label: Text(l10n.saveUpdateSettings),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdsTab(bool isDark, AppLocalizations l10n) {
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        _buildAdminSection(
+          title: l10n.adManagement,
           isDark: isDark,
           child: SwitchListTile(
-            title: const Text('Show Ads Globally'),
+            title: Text(l10n.showAdsGlobally),
             subtitle: const Text('Toggling this affects all users'),
             value: _settings?.adsEnabled ?? true,
             onChanged: (val) async {
@@ -449,7 +660,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildFeaturedTab(bool isDark) {
+  Widget _buildFeaturedTab(bool isDark, AppLocalizations l10n) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _adminRepo.getFeaturedAnime(),
       builder: (context, snapshot) {
@@ -479,14 +690,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           height: 75,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const Icon(Icons.broken_image),
+                              const Icon(LucideIcons.imageOff),
                         )
-                      : const Icon(Icons.image),
+                      : const Icon(LucideIcons.image),
                 ),
                 title: Text(item['title'] ?? 'Title'),
                 subtitle: Text('Priority: ${item['priority'] ?? 0}'),
                 trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: const Icon(LucideIcons.trash, color: Colors.red),
                   onPressed: () async {
                     await _adminRepo.removeFeaturedAnime(item['id']);
                     if (mounted) {
@@ -504,7 +715,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildUsersTab(bool isDark) {
+  Widget _buildUsersTab(bool isDark, AppLocalizations l10n) {
     return Column(
       children: [
         Padding(
@@ -512,8 +723,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           child: TextField(
             controller: _userSearchController,
             decoration: InputDecoration(
-              hintText: 'Search users...',
-              prefixIcon: const Icon(Icons.search),
+              hintText: l10n.searchUsers,
+              prefixIcon: const Icon(LucideIcons.search),
               filled: true,
               fillColor: isDark ? Colors.grey[900] : Colors.grey[200],
               border: OutlineInputBorder(
@@ -575,7 +786,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                           child: Column(
                             children: [
                               SwitchListTile(
-                                title: const Text('Active Account'),
+                                title: Text(l10n.activeAccount),
                                 subtitle: const Text('Toggle to ban/unban'),
                                 value: !(user['isBanned'] ?? false),
                                 onChanged: (val) async {
@@ -587,7 +798,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                                 },
                               ),
                               SwitchListTile(
-                                title: const Text('Administrator'),
+                                title: Text(l10n.administrator),
                                 subtitle: const Text('Grant admin privileges'),
                                 value: isAdmin,
                                 activeColor: AppColors.primary,
@@ -623,37 +834,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
     );
   }
 
-  Widget _buildAnnouncementsTab(bool isDark) {
+  Widget _buildAnnouncementsTab(bool isDark, AppLocalizations l10n) {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         _buildAdminSection(
-          title: 'New Announcement',
+          title: l10n.newAnnouncement,
           isDark: isDark,
           child: Column(
             children: [
               TextField(
                 controller: _announcementTitleController,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: InputDecoration(labelText: l10n.title),
               ),
               TextField(
                 controller: _announcementContentController,
-                decoration: const InputDecoration(labelText: 'Content'),
+                decoration: InputDecoration(labelText: l10n.content),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _announcementType,
                 decoration: const InputDecoration(labelText: 'Type'),
-                items: const [
-                  DropdownMenuItem(value: 'info', child: Text('Information')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'info',
+                    child: Text(l10n.information),
+                  ),
                   DropdownMenuItem(
                     value: 'success',
-                    child: Text('Success/Important'),
+                    child: Text(l10n.successImportant),
                   ),
                   DropdownMenuItem(
                     value: 'warning',
-                    child: Text('Warning/Maintenance'),
+                    child: Text(l10n.warningMaintenance),
                   ),
                 ],
                 onChanged: (val) => setState(() => _announcementType = val!),
@@ -668,11 +882,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                   );
                   _announcementTitleController.clear();
                   _announcementContentController.clear();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Announcement Broadcasted')),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.announcementBroadcasted)),
+                    );
+                  }
                 },
-                child: const Text('Broadcast'),
+                child: Text(l10n.broadcast),
               ),
             ],
           ),

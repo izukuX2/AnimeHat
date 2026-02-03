@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/theme_manager.dart';
+import '../../../../core/theme/accent_colors.dart';
 import '../../../../core/models/sync_settings.dart';
 import '../../../../core/repositories/sync_repository.dart';
 import '../../../../core/repositories/user_repository.dart';
@@ -13,12 +15,16 @@ import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/backup_service.dart';
 import '../../../home/data/home_repository.dart';
 import '../../../../core/api/animeify_api_client.dart';
+import '../../../../core/services/update_service.dart';
+import '../../../../core/widgets/update_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Locale currentLocale;
   final Function(Locale) onLocaleChange;
   final AppThemeType currentTheme;
   final Function(AppThemeType) onThemeChange;
+  final String? currentAccentName;
+  final Function(String?) onAccentChange;
   final SyncSettings syncSettings;
   final Function(SyncSettings) onSyncSettingsChange;
 
@@ -28,6 +34,8 @@ class SettingsScreen extends StatefulWidget {
     required this.onLocaleChange,
     required this.currentTheme,
     required this.onThemeChange,
+    this.currentAccentName,
+    required this.onAccentChange,
     required this.syncSettings,
     required this.onSyncSettingsChange,
   });
@@ -62,10 +70,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       prefs.setBool('dev_mode_enabled', _isDevMode);
     });
     if (mounted) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _isDevMode ? 'Developer Mode Enabled' : 'Developer Mode Disabled',
+            _isDevMode ? l10n.welcomeBack : 'Developer Mode Disabled',
           ),
           backgroundColor: _isDevMode ? Colors.green : Colors.grey,
         ),
@@ -104,29 +113,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                   secondary: Icon(
-                    isDark ? Icons.dark_mode : Icons.light_mode,
+                    isDark ? LucideIcons.moon : LucideIcons.sun,
                     color: isDark ? AppColors.darkPrimary : AppColors.primary,
                   ),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: Icon(
-                    Icons.palette_rounded,
+                    LucideIcons.palette,
                     color: isDark ? AppColors.darkPrimary : AppColors.primary,
                   ),
-                  title: const Text(
-                    'App Theme',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  title: Text(
+                    l10n.appTheme,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: const Text(
-                    'Customize colors and appearance',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.customizeAppearance,
+                    style: const TextStyle(fontSize: 12),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(LucideIcons.chevronRight),
                   onTap: () {
                     _showThemeSelector(context, isDark);
                   },
                 ),
+                if (widget.currentAccentName != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 70, bottom: 12),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Active Accent:',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                AccentColors.getByName(
+                                  widget.currentAccentName!,
+                                )?.primary.withOpacity(0.1) ??
+                                Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  AccentColors.getByName(
+                                    widget.currentAccentName!,
+                                  )?.primary.withOpacity(0.3) ??
+                                  Colors.transparent,
+                            ),
+                          ),
+                          child: Text(
+                            '${AccentColors.getByName(widget.currentAccentName!)?.emoji ?? ''} ${widget.currentAccentName}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AccentColors.getByName(
+                                widget.currentAccentName!,
+                              )?.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -139,7 +192,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _buildLanguageOption(
                   context,
-                  'English',
+                  l10n.english,
                   const Locale('en'),
                   widget.currentLocale,
                   widget.onLocaleChange,
@@ -147,8 +200,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1),
                 _buildLanguageOption(
                   context,
-                  'العربية',
+                  l10n.arabic,
                   const Locale('ar'),
+                  widget.currentLocale,
+                  widget.onLocaleChange,
+                ),
+                const Divider(height: 1),
+                _buildLanguageOption(
+                  context,
+                  l10n.french,
+                  const Locale('fr'),
                   widget.currentLocale,
                   widget.onLocaleChange,
                 ),
@@ -189,17 +250,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           */
           _buildSection(
             context,
-            'Background Sync',
+            l10n.backgroundSync,
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text(
-                    'Auto-Upload (Sync)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  title: Text(
+                    l10n.autoUpload,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: const Text(
-                    'Update library in the background',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.updateLibraryBackground,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   value: widget.syncSettings.isEnabled,
                   activeThumbColor: AppColors.primary,
@@ -209,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     );
                   },
                   secondary: Icon(
-                    Icons.cloud_sync,
+                    LucideIcons.cloud,
                     color: isDark ? AppColors.darkPrimary : AppColors.primary,
                   ),
                 ),
@@ -220,9 +281,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Sync Speed',
-                          style: TextStyle(
+                        Text(
+                          l10n.syncSpeed,
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -260,14 +321,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
                 const Divider(indent: 70),
                 ListTile(
-                  leading: const Icon(Icons.refresh, color: Colors.orange),
-                  title: const Text(
-                    'Manual Full Sync',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  leading: const Icon(
+                    LucideIcons.refreshCw,
+                    color: Colors.orange,
                   ),
-                  subtitle: const Text(
-                    'Force update the entire library now',
-                    style: TextStyle(fontSize: 12),
+                  title: Text(
+                    l10n.manualFullSync,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    l10n.forceUpdateLibrary,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   trailing: ElevatedButton(
                     onPressed: () {
@@ -275,7 +339,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Starting manual synchronization...'),
-                          backgroundColor: Colors.blue,
                         ),
                       );
                     },
@@ -286,54 +349,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: const Text('Start'),
+                    child: Text(l10n.start),
                   ),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(
-                    Icons.backup_rounded,
-                    color: Colors.green,
+                  leading: const Icon(LucideIcons.archive, color: Colors.green),
+                  title: Text(
+                    l10n.backupAllData,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  title: const Text(
-                    'Backup All Data',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: const Text(
-                    'Export all anime data and links to a folder',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.exportDataFolder,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   onTap: () => _handleBackup(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(
-                    Icons.settings_backup_restore_rounded,
+                    LucideIcons.history,
                     color: Colors.orange,
                   ),
-                  title: const Text(
-                    'Restore All Data',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  title: Text(
+                    l10n.restoreAllData,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: const Text(
-                    'Import anime data from a backup file',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.importBackupFile,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   onTap: () => _handleRestore(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(
-                    Icons.delete_sweep_rounded,
-                    color: Colors.red,
+                  leading: const Icon(LucideIcons.trash2, color: Colors.red),
+                  title: Text(
+                    l10n.syncUserProfile,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  title: const Text(
-                    'Sync User Profile',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: const Text(
-                    'Create/Update your profile in database',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.createUpdateProfile,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   onTap: () async {
                     final user = FirebaseAuth.instance.currentUser;
@@ -385,37 +442,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           _buildSection(
             context,
-            'Offline Storage',
+            l10n.offlineStorage,
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(
-                    Icons.download_rounded,
-                    color: Colors.blue,
+                  leading: const Icon(LucideIcons.download, color: Colors.blue),
+                  title: Text(
+                    l10n.downloadAllData,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  title: const Text(
-                    'Download All Data',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: const Text(
-                    'Store anime info and links for offline use',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.storeInfoOffline,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   onTap: () => _startOfflineSync(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(
-                    Icons.delete_sweep_rounded,
-                    color: Colors.red,
+                  leading: const Icon(LucideIcons.trash2, color: Colors.red),
+                  title: Text(
+                    l10n.clearLocalCache,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  title: const Text(
-                    'Clear Local Cache',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: const Text(
-                    'Free up space by removing cached data',
-                    style: TextStyle(fontSize: 12),
+                  subtitle: Text(
+                    l10n.freeUpSpace,
+                    style: const TextStyle(fontSize: 12),
                   ),
                   onTap: () async {
                     final confirmed = await showDialog<bool>(
@@ -465,18 +516,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'Developer Tools',
                   child: ListTile(
                     leading: const Icon(
-                      Icons.admin_panel_settings,
+                      LucideIcons.shieldCheck,
                       color: Colors.red,
                     ),
-                    title: const Text(
-                      'Admin Dashboard',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    title: Text(
+                      l10n.adminDashboard,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: const Text(
-                      'Manage app settings, users, and content',
-                      style: TextStyle(fontSize: 12),
+                    subtitle: Text(
+                      l10n.manageApp,
+                      style: const TextStyle(fontSize: 12),
                     ),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(LucideIcons.chevronRight),
                     onTap: () {
                       Navigator.pushNamed(context, '/admin');
                     },
@@ -485,6 +536,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
               return const SizedBox.shrink();
             },
+          ),
+          const SizedBox(height: 20),
+          _buildSection(
+            context,
+            'App & Updates',
+            child: ListTile(
+              leading: const Icon(
+                LucideIcons.arrowUpCircle,
+                color: AppColors.primary,
+              ),
+              title: Text(
+                l10n.checkForUpdates,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                l10n.ensureLatestVersion,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onTap: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Checking for updates...')),
+                );
+                try {
+                  final updateService = UpdateService();
+                  final releaseData = await updateService.checkUpdate();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    if (releaseData != null) {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (context) =>
+                            UpdateDialog(releaseData: releaseData),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('App is up to date!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            ),
           ),
           const SizedBox(height: 40),
           // Version info with hidden gesture
@@ -602,6 +708,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         currentTheme: widget.currentTheme,
         onThemeChanged: (theme) {
           widget.onThemeChange(theme);
+        },
+        currentAccentName: widget.currentAccentName,
+        onAccentChanged: (accent) {
+          widget.onAccentChange(accent);
         },
       ),
     );
