@@ -1,12 +1,12 @@
 <div align="center">
 
 <a href="https://.app">
-    <img src="assets/images/logo_icon_foreground.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
+    <img src="assets/images/logo_no_bg.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
 </a>
 
 # AnimeHat [App](#)
 
-### Full-featured reader
+### Full-featured watcher
 Discover and watch , anime, carton, and more – easier than ever on your Android device.
 
 [![Discord server](https://img.shields.io/discord/1195734228319617024.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/WmEEQ5Q3e5)
@@ -21,7 +21,7 @@ Discover and watch , anime, carton, and more – easier than ever on your Androi
 [![Mihon Stable](https://img.shields.io/github/release/izukuX2/AnimeHat.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://mihon.app/download)
 [![Mihon Beta](https://img.shields.io/github/v/release/izukuX2/AnimeHat-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://.app/download)
 
-*Requires Android 8.0 or higher.*
+*Requires Android 7.0 or higher.*
 
 ## Features
 
