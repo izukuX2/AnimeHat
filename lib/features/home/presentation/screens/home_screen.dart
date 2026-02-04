@@ -55,46 +55,48 @@ class _HomeScreenState extends State<HomeScreen>
 
   // Category definitions
   List<_CategoryItem> _getCategories(AppLocalizations l10n) => [
-    _CategoryItem(
-      LucideIcons.compass,
-      l10n.explore,
-      0,
-      const Color(0xFF007AFF),
-    ),
-    _CategoryItem(
-      LucideIcons.playCircle,
-      l10n.episodes,
-      1,
-      const Color(0xFFFF9500),
-    ),
-    _CategoryItem(LucideIcons.tv, l10n.series, 2, const Color(0xFF34C759)),
-    _CategoryItem(LucideIcons.film, l10n.movies, 3, const Color(0xFFAF52DE)),
-    _CategoryItem(LucideIcons.search, l10n.search, 4, const Color(0xFFFF3B30)),
-    _CategoryItem(
-      LucideIcons.users,
-      l10n.characters,
-      5,
-      const Color(0xFF5856D6),
-    ),
-    _CategoryItem(
-      LucideIcons.bookmark,
-      l10n.library,
-      6,
-      const Color(0xFFFF2D55),
-    ),
-    _CategoryItem(
-      LucideIcons.messageSquare,
-      l10n.community,
-      7,
-      const Color(0xFF007AFF),
-    ),
-    _CategoryItem(
-      LucideIcons.history,
-      l10n.history,
-      8,
-      const Color(0xFFFF9500),
-    ),
-  ];
+        _CategoryItem(
+          LucideIcons.compass,
+          l10n.explore,
+          0,
+          const Color(0xFF007AFF),
+        ),
+        _CategoryItem(
+          LucideIcons.playCircle,
+          l10n.episodes,
+          1,
+          const Color(0xFFFF9500),
+        ),
+        _CategoryItem(LucideIcons.tv, l10n.series, 2, const Color(0xFF34C759)),
+        _CategoryItem(
+            LucideIcons.film, l10n.movies, 3, const Color(0xFFAF52DE)),
+        _CategoryItem(
+            LucideIcons.search, l10n.search, 4, const Color(0xFFFF3B30)),
+        _CategoryItem(
+          LucideIcons.users,
+          l10n.characters,
+          5,
+          const Color(0xFF5856D6),
+        ),
+        _CategoryItem(
+          LucideIcons.bookmark,
+          l10n.library,
+          6,
+          const Color(0xFFFF2D55),
+        ),
+        _CategoryItem(
+          LucideIcons.messageSquare,
+          l10n.community,
+          7,
+          const Color(0xFF007AFF),
+        ),
+        _CategoryItem(
+          LucideIcons.history,
+          l10n.history,
+          8,
+          const Color(0xFFFF9500),
+        ),
+      ];
 
   @override
   void initState() {
@@ -216,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   LibraryView(repository: _repository),
                   const CommunityView(),
-                  HistoryView(),
+                  HistoryView(repository: _repository),
                 ],
               ),
             ),
@@ -517,8 +519,8 @@ class _HomeScreenState extends State<HomeScreen>
                     color: isSelected
                         ? category.color
                         : (isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.1)),
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.black.withOpacity(0.1)),
                     width: 1.5,
                   ),
                 ),
@@ -537,9 +539,8 @@ class _HomeScreenState extends State<HomeScreen>
                       category.label,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w500,
                         color: isSelected
                             ? category.color
                             : (isDark ? Colors.white70 : Colors.black54),
@@ -591,9 +592,8 @@ class _HomeScreenState extends State<HomeScreen>
                     category.label,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w500,
                       color: isSelected
                           ? category.color
                           : (isDark ? Colors.white70 : Colors.black54),
@@ -620,110 +620,161 @@ class _HomeScreenState extends State<HomeScreen>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-          child: Text(
-            '✨ ${l10n.popularAnime}',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '✨ ${l10n.popularAnime}',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              // Optional: Add indicator here
+            ],
           ),
         ),
         SizedBox(
-          height: 180,
+          height: 220, // Increased height for cinematic feel
           child: PageView.builder(
-            controller: PageController(viewportFraction: 0.92),
+            controller: PageController(viewportFraction: 0.88),
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
-              return GestureDetector(
-                onTap: () {
-                  if (item.anime != null) {
-                    Navigator.pushNamed(
-                      context,
-                      '/anime-details',
-                      arguments: item.anime,
-                    );
-                  }
+              return AnimatedBuilder(
+                animation:
+                    PageController(), // Placeholder for animation if needed
+                builder: (context, child) {
+                  return child!;
                 },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        AppNetworkImage(
-                          path: item.photo,
-                          category: 'sliders',
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.85),
-                              ],
-                              stops: const [0.4, 1.0],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 16,
-                          left: 16,
-                          right: 16,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (item.type == 'EPISODE' &&
-                                  item.episode != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'EP ${item.episode!.episodeNumber}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              Text(
-                                item.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ],
-                          ),
+                child: GestureDetector(
+                  onTap: () {
+                    if (item.anime != null) {
+                      Navigator.pushNamed(
+                        context,
+                        '/anime-details',
+                        arguments: item.anime,
+                      );
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                          spreadRadius: -5,
                         ),
                       ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          AppNetworkImage(
+                            path: item.photo,
+                            category: 'sliders',
+                            fallbackCategory: 'thumbnails',
+                            fit: BoxFit.cover,
+                          ),
+                          // Premium Gradient Overlay
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.2),
+                                  Colors.black.withOpacity(0.95),
+                                ],
+                                stops: const [0.0, 0.4, 1.0],
+                              ),
+                            ),
+                          ),
+                          // Content
+                          Positioned(
+                            bottom: 20,
+                            right: 20,
+                            left: 20,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (item.type == 'EPISODE' &&
+                                    item.episode != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withOpacity(
+                                            0.5,
+                                          ),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Text(
+                                      '${l10n.episodes} ${item.episode!.episodeNumber}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                Text(
+                                  item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.1,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      LucideIcons.playCircle,
+                                      color: Colors.white.withOpacity(0.7),
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      "Watch Now",
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -747,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -755,9 +806,16 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   Container(
                     width: 4,
-                    height: 24,
+                    height: 22,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.5)
+                        ],
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -765,9 +823,10 @@ class _HomeScreenState extends State<HomeScreen>
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.4,
+                      color: isDark ? Colors.white : Colors.black,
                     ),
                   ),
                 ],
@@ -775,32 +834,44 @@ class _HomeScreenState extends State<HomeScreen>
               if (onSeeAll != null)
                 GestureDetector(
                   onTap: onSeeAll,
-                  child: Text(
-                    seeAllLabel ?? 'See All',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      seeAllLabel ?? 'See All',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.65,
-            ),
-            itemCount: items.length,
-            itemBuilder: (context, index) => itemBuilder(items[index]),
-          ),
+        SizedBox(
+          height: 260, // Consistent height for horizontal grid/list sections
+          child: items.isEmpty
+              ? const Center(child: ShimmerAnimeGrid(itemCount: 3))
+              : GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    mainAxisSpacing: 0,
+                    crossAxisSpacing: 0,
+                    childAspectRatio: 1.4, // Matches AnimeCard aspect ratio
+                  ),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) => itemBuilder(items[index]),
+                ),
         ),
       ],
     );
@@ -1084,7 +1155,6 @@ class _HomeScreenState extends State<HomeScreen>
                       Navigator.pop(context);
                     },
                   ),
-
                   const SizedBox(height: 20),
                   _buildDrawerSectionTitle(isDark, l10n.explore),
                   for (int i = 0; i <= 5; i++)
@@ -1100,7 +1170,6 @@ class _HomeScreenState extends State<HomeScreen>
                         Navigator.pop(context);
                       },
                     ),
-
                   const SizedBox(height: 20),
                   _buildDrawerSectionTitle(isDark, l10n.myLibrary),
                   _buildDrawerItem(
@@ -1127,7 +1196,6 @@ class _HomeScreenState extends State<HomeScreen>
                       Navigator.pop(context);
                     },
                   ),
-
                   const SizedBox(height: 20),
                   _buildDrawerSectionTitle(isDark, l10n.explore.toUpperCase()),
                   _buildDrawerItem(
@@ -1203,8 +1271,7 @@ class _HomeScreenState extends State<HomeScreen>
           final appUser = snapshot.data;
           final photoUrl =
               appUser?.photoUrl ?? FirebaseAuth.instance.currentUser?.photoURL;
-          final displayName =
-              appUser?.displayName ??
+          final displayName = appUser?.displayName ??
               FirebaseAuth.instance.currentUser?.displayName ??
               "Guest";
 
@@ -1305,9 +1372,8 @@ class _HomeScreenState extends State<HomeScreen>
                     color: isSelected
                         ? color
                         : (isDark ? Colors.white : Colors.black87),
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 14,
                   ),
                   maxLines: 1,

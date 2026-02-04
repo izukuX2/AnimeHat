@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/models/user_model.dart';
-import '../../../../core/models/anime_model.dart';
 import '../../../../core/widgets/app_network_image.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../data/home_repository.dart';
 
 class HistoryView extends StatelessWidget {
-  const HistoryView({super.key});
+  final HomeRepository repository;
+  const HistoryView({super.key, required this.repository});
 
   @override
   Widget build(BuildContext context) {
@@ -102,9 +103,8 @@ class HistoryView extends StatelessWidget {
                               value: item.totalDurationInMs > 0
                                   ? item.positionInMs / item.totalDurationInMs
                                   : 0,
-                              backgroundColor: isDark
-                                  ? Colors.grey[800]
-                                  : Colors.grey[200],
+                              backgroundColor:
+                                  isDark ? Colors.grey[800] : Colors.grey[200],
                               valueColor: const AlwaysStoppedAnimation<Color>(
                                 AppColors.primary,
                               ),
@@ -139,34 +139,26 @@ class HistoryView extends StatelessWidget {
   }
 
   void _navigateToAnime(BuildContext context, String animeId) {
-    final dummyAnime = Anime(
-      id: '',
-      animeId: animeId,
-      enTitle: "Loading...",
-      jpTitle: "",
-      arTitle: "",
-      synonyms: "",
-      genres: "",
-      season: "",
-      premiered: "",
-      aired: "",
-      broadcast: "",
-      duration: "",
-      thumbnail: "",
-      trailer: "",
-      ytTrailer: "",
-      creators: "",
-      status: "",
-      episodes: "",
-      score: "",
-      rank: "",
-      popularity: "",
-      rating: "",
-      type: "",
-      views: "",
-      malId: "0",
+    // Show a loading dialog while fetching metadata
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
-    Navigator.pushNamed(context, '/anime-details', arguments: dummyAnime);
+
+    repository.getAnimeById(animeId).then((anime) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushNamed(context, '/anime-details', arguments: anime);
+      }
+    }).catchError((e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    });
   }
 
   String _formatDuration(int ms) {

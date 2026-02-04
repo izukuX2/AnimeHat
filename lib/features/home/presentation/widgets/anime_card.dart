@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/app_network_image.dart';
 
@@ -35,12 +36,12 @@ class _AnimeCardState extends State<AnimeCard>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 150),
     );
     _scaleAnimation = Tween<double>(
       begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -78,8 +79,7 @@ class _AnimeCardState extends State<AnimeCard>
   }
 
   Widget _buildCompactCard(BuildContext context, bool isDark) {
-    final shape = Theme.of(context).cardTheme.shape as RoundedRectangleBorder?;
-    final borderRadius = shape?.borderRadius ?? BorderRadius.circular(16);
+    final borderRadius = BorderRadius.circular(20);
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -88,14 +88,11 @@ class _AnimeCardState extends State<AnimeCard>
       child: Container(
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          border: shape?.side != BorderSide.none
-              ? Border.all(color: shape!.side.color, width: shape.side.width)
-              : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -120,18 +117,19 @@ class _AnimeCardState extends State<AnimeCard>
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.85),
+                        Colors.black.withOpacity(0.1),
+                        Colors.black.withOpacity(0.9),
                       ],
-                      stops: const [0.5, 1.0],
+                      stops: const [0.4, 0.7, 1.0],
                     ),
                   ),
                 ),
               ),
               // Text content
               Positioned(
-                left: 8,
-                right: 8,
-                bottom: 8,
+                left: 10,
+                right: 10,
+                bottom: 10,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -140,26 +138,20 @@ class _AnimeCardState extends State<AnimeCard>
                       widget.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black54,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                        letterSpacing: -0.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (widget.subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         widget.subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withOpacity(0.7),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -170,27 +162,18 @@ class _AnimeCardState extends State<AnimeCard>
                   ],
                 ),
               ),
-              // Episode Badge
+              // Episode Badge (Glassmorphism)
               if (widget.episodeBadge != null)
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.white24, width: 0.5),
-                    ),
+                  child: _buildGlassBadge(
                     child: Text(
                       widget.episodeBadge!,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
@@ -207,7 +190,13 @@ class _AnimeCardState extends State<AnimeCard>
                     ),
                     decoration: BoxDecoration(
                       color: Colors.amber,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -218,8 +207,8 @@ class _AnimeCardState extends State<AnimeCard>
                           widget.rating!.toStringAsFixed(1),
                           style: const TextStyle(
                             color: Colors.black,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
@@ -234,28 +223,22 @@ class _AnimeCardState extends State<AnimeCard>
   }
 
   Widget _buildRegularCard(BuildContext context, bool isDark) {
-    final shape = Theme.of(context).cardTheme.shape as RoundedRectangleBorder?;
-    final borderRadius = shape?.borderRadius ?? BorderRadius.circular(16);
+    final borderRadius = BorderRadius.circular(24);
 
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       child: Container(
-        width: 160,
-        margin: const EdgeInsets.only(right: 16),
+        width: 170,
+        margin: const EdgeInsets.only(right: 16, bottom: 8),
         decoration: BoxDecoration(
           borderRadius: borderRadius,
-          border: shape?.side != BorderSide.none
-              ? Border.all(color: shape!.side.color, width: shape.side.width)
-              : null,
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: isDark ? Colors.black45 : Colors.grey.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -274,36 +257,33 @@ class _AnimeCardState extends State<AnimeCard>
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
-                    stops: const [0.6, 1.0],
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.1),
+                      Colors.black.withOpacity(0.95),
+                    ],
+                    stops: const [0.5, 0.75, 1.0],
                   ),
                 ),
               ),
+              // Top Right Badge
               Positioned(
                 top: 12,
                 right: 12,
                 child: widget.episodeBadge != null
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.white12, width: 0.5),
-                        ),
+                    ? _buildGlassBadge(
                         child: Text(
                           widget.episodeBadge!,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       )
                     : const SizedBox.shrink(),
               ),
+              // Top Left Rating
               if (widget.rating != null)
                 Positioned(
                   top: 12,
@@ -315,7 +295,13 @@ class _AnimeCardState extends State<AnimeCard>
                     ),
                     decoration: BoxDecoration(
                       color: Colors.amber,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withOpacity(0.3),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -327,15 +313,16 @@ class _AnimeCardState extends State<AnimeCard>
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
+              // Bottom Content
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,26 +331,22 @@ class _AnimeCardState extends State<AnimeCard>
                       widget.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                        height: 1.2,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (widget.subtitle != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         widget.subtitle!,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
                           fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -374,6 +357,24 @@ class _AnimeCardState extends State<AnimeCard>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassBadge({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+          ),
+          child: child,
         ),
       ),
     );

@@ -41,8 +41,7 @@ class HomeRepository {
       final allAnimes = await _dbHelper.getAllAnimes();
       if (news.isNotEmpty || allAnimes.isNotEmpty) {
         return HomeData(
-          latestEpisodes:
-              [], // Complex to reconstruct without episode cache, maybe simplify
+          latestEpisodes: [], // Complex to reconstruct without episode cache, maybe simplify
           broadcast: allAnimes.where((a) => a.status == 'Ongoing').toList(),
           premiere: allAnimes.where((a) => a.season.isNotEmpty).toList(),
           latestNews: news,
@@ -130,6 +129,12 @@ class HomeRepository {
     // 2. Fallback to API if not cached
     try {
       var json = await apiClient.getAnimeDetails(animeId);
+
+      // Handle nested Anime object if present
+      if (json.containsKey('Anime')) {
+        json = json['Anime'];
+      }
+
       // Ensure the ID is present in the JSON so the model is valid
       if (json['AnimeId'] == null && json['animeId'] == null) {
         json = Map<String, dynamic>.from(json);
@@ -147,6 +152,12 @@ class HomeRepository {
   Future<void> _updateAnimeCache(String animeId) async {
     try {
       var json = await apiClient.getAnimeDetails(animeId);
+
+      // Handle nested Anime object if present
+      if (json.containsKey('Anime')) {
+        json = json['Anime'];
+      }
+
       if (json['AnimeId'] == null && json['animeId'] == null) {
         json = Map<String, dynamic>.from(json);
         json['AnimeId'] = animeId;

@@ -110,8 +110,8 @@ class Anime {
       rating: (json['Rating'] ?? json['rating'] ?? '').toString(),
       type: (json['Type'] ?? json['type'] ?? '').toString(),
       views: (json['views'] ?? json['Views'] ?? '0').toString(),
-      malId: (json['MalId'] ?? json['malId'] ?? json['mal_id'] ?? '0')
-          .toString(),
+      malId:
+          (json['MalId'] ?? json['malId'] ?? json['mal_id'] ?? '0').toString(),
     );
   }
 }
@@ -143,8 +143,8 @@ class Episode {
     return Episode(
       eId: (json['eId'] ?? json['Id'] ?? '').toString(),
       animeId: (json['AnimeID'] ?? json['animeId'] ?? '').toString(),
-      episodeNumber: (json['Episode'] ?? json['episodeNumber'] ?? '')
-          .toString(),
+      episodeNumber:
+          (json['Episode'] ?? json['episodeNumber'] ?? '').toString(),
       okLink: (json['OKLink'] ?? json['okLink'] ?? '').toString(),
       maLink: (json['MALink'] ?? json['maLink'] ?? '').toString(),
       frLink: (json['FRLink'] ?? json['frLink'] ?? '').toString(),
@@ -215,16 +215,16 @@ class AnimeDetails {
   });
 
   factory AnimeDetails.fromJson(Map<String, dynamic> json) {
+    final animeData = json['Anime'] ?? json;
     return AnimeDetails(
-      plot: json['Plot']?.toString() ?? json['synopsis']?.toString() ?? '',
-      synopsis: json['synopsis']?.toString() ?? '',
-      background: json['background']?.toString() ?? '',
-      popularity: json['popularity']?.toString() ?? '0',
-      members: json['members']?.toString() ?? '0',
-      favorites: json['favorites']?.toString() ?? '0',
+      plot: (animeData['Plot'] ?? animeData['synopsis'] ?? '').toString(),
+      synopsis: (animeData['synopsis'] ?? '').toString(),
+      background: (animeData['background'] ?? '').toString(),
+      popularity: (animeData['popularity'] ?? '0').toString(),
+      members: (animeData['members'] ?? '0').toString(),
+      favorites: (animeData['favorites'] ?? '0').toString(),
       statistics: AnimeStatistics.fromJson(json['AnimeStatistics'] ?? json),
-      relatedAnime:
-          (json['RelatedAnime'] as List?)
+      relatedAnime: (json['RelatedAnime'] as List?)
               ?.map((e) => Anime.fromJson(e))
               .toList() ??
           [],
@@ -342,15 +342,13 @@ class AppConfiguration {
     final config = json['Configurations'] ?? {};
     return AppConfiguration(
       currentSeason: config['current_season']?.toString() ?? '',
-      studios:
-          (config['collection_studios'] as String?)
+      studios: (config['collection_studios'] as String?)
               ?.split(',')
               .map((s) => s.trim())
               .where((s) => s.isNotEmpty)
               .toList() ??
           [],
-      years:
-          (config['collection_years'] as String?)
+      years: (config['collection_years'] as String?)
               ?.split(',')
               .map((s) => s.trim())
               .where((s) => s.isNotEmpty)
@@ -376,21 +374,18 @@ class HomeData {
 
   factory HomeData.fromJson(Map<String, dynamic> json) {
     return HomeData(
-      latestEpisodes:
-          (json['LatestEpisodes'] as List?)
+      latestEpisodes: (json['LatestEpisodes'] as List?)
               ?.map((e) => AnimeWithEpisode.fromJson(e))
               .toList() ??
           [],
-      broadcast:
-          (json['Broadcast'] as List?)
+      broadcast: (json['Broadcast'] as List?)
               ?.map((e) => Anime.fromJson(e))
               .toList() ??
           [],
       premiere:
           (json['Premiere'] as List?)?.map((e) => Anime.fromJson(e)).toList() ??
-          [],
-      latestNews:
-          (json['LatestNews'] as List?)
+              [],
+      latestNews: (json['LatestNews'] as List?)
               ?.map((e) => NewsItem.fromJson(e))
               .toList() ??
           [],
@@ -422,9 +417,8 @@ class TrendingItem {
       photo: json['Photo']?.toString() ?? '',
       type: json['Type']?.toString() ?? '',
       anime: json['Anime'] != null ? Anime.fromJson(json['Anime']) : null,
-      episode: json['Episode'] != null
-          ? Episode.fromJson(json['Episode'])
-          : null,
+      episode:
+          json['Episode'] != null ? Episode.fromJson(json['Episode']) : null,
     );
   }
 
