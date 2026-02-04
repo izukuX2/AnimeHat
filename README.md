@@ -1,74 +1,66 @@
 <div align="center">
 
-<a href="https://.app">
-    <img src="assets/images/logo_no_bg.png" alt="AnimeHat logo" title="AnimeHat logo" width="80"/>
+<a href="https://github.com/izukuX2/AnimeHat">
+    <img src="assets/images/logo_no_bg.png" alt="AnimeHat logo" title="AnimeHat logo" width="100"/>
 </a>
 
-# AnimeHat [App](#)
+# AnimeHat
 
-### Full-featured watcher
-Discover and watch , anime, carton, and more – easier than ever on your Android device.
+### The Ultimate Premium Anime Experience
+Discover, track, and watch your favorite anime with a state-of-the-art interface designed for Android.
 
-[![Discord server](https://img.shields.io/discord/1195734228319617024.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/WmEEQ5Q3e5)
-[![GitHub downloads](https://img.shields.io/github/downloads/izukuX2/AnimeHat/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://.app/download)
-
-[![CI](https://img.shields.io/github/actions/workflow/status/izukuX2/AnimeHat/build.yml?labelColor=27303D)](https://github.com/mihonapp/mihon/actions/workflows/build_push.yml)
-[![License: Apache-2.0](https://img.shields.io/github/license/izukuX2/AnimeHat?labelColor=27303D&color=0877d2)](/LICENSE)
-[![Translation status](https://img.shields.io/weblate/progress/animehat?labelColor=27303D&color=946300)](https://hosted.weblate.org/engage/animehat/)
+[![Discord server](https://img.shields.io/discord/1195734228319617024.svg?label=Discord&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/WmEEQ5Q3e5)
+[![GitHub downloads](https://img.shields.io/github/downloads/izukuX2/AnimeHat/total?label=Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/izukuX2/AnimeHat/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/izukuX2/AnimeHat/release.yml?label=Build&labelColor=27303D)](https://github.com/izukuX2/AnimeHat/actions)
+[![License: Apache-2.0](https://img.shields.io/github/license/izukuX2/AnimeHat?label=License&labelColor=27303D&color=0877d2)](/LICENSE)
 
 ## Download
 
-[![Mihon Stable](https://img.shields.io/github/release/izukuX2/AnimeHat.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://mihon.app/download)
-[![Mihon Beta](https://img.shields.io/github/v/release/izukuX2/AnimeHat-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://.app/download)
+[![Stable Release](https://img.shields.io/github/v/release/izukuX2/AnimeHat?maxAge=3600&label=Stable&labelColor=06599d&color=043b69&style=for-the-badge)](https://github.com/izukuX2/AnimeHat/releases/latest)
 
-*Requires Android 7.0 or higher.*
+*Requires Android 7.0 (Nougat) or higher.*
 
-## Features
+## ✨ Key Features
 
 <div align="left">
 
-* Local reading of content.
-* A configurable reader with multiple viewers, reading directions and other settings.
-* Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), and [Bangumi](https://bgm.tv/) support.
-* Categories to organize your library.
-* Light and dark themes.
-* Schedule updating your library for new chapters.
-* Create backups locally to read offline or to your desired cloud service.
-* Plus much more...
+* 🤖 **AI-Powered Recommendations**: Discover your next favorite series with smart suggestions like "Recommended for You" and "Because You Watched".
+* 📅 **Live Broadcast Schedule**: Stay updated with real-time countdown timers for ongoing series.
+* 🎭 **Adaptive UI Tinting**: The app's accent colors dynamically change to match the genre of the anime you're viewing.
+* 🍷 **Glassmorphism Design**: A premium, modern interface with beautiful blur effects and fluid micro-animations.
+* 🎬 **Advanced Video Player**: Premium playback experience with gesture controls for volume/brightness, high-quality streaming server selection, and "Netflix-style" skipping.
+* 📚 **Organized Library**: Manage your collection with offline metadata caching, advanced filtering, and instant search.
+* 👤 **User Profiles & Badges**: Track your watch stats and win achievement badges as you progress.
+* 🌓 **Dark/Light Mode**: Full support for system themes with carefully crafted color palettes.
 
 </div>
 
-## Contributing
+## 🛠️ Built With
 
-[Code of conduct](./CODE_OF_CONDUCT.md) · [Contributing guide](./CONTRIBUTING.md)
+- **Flutter**: High-performance cross-platform framework.
+- **Dart**: The language for client-optimized apps.
+- **Firebase**: Reliable backend services for authentication and real-time data.
+- **Supabase**: Open-source Firebase alternative for advanced archival.
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+## 🤝 Contributing
 
-Before reporting a new issue, take a look at the [FAQ](https://mihon.app/docs/faq/general), the [changelog](https://.app/changelogs/) and the already opened [issues](https://github.com/izukuX2/AnimeHat/issues); if you got any questions, join our [Discord server]().
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Repositories
+## 📜 Disclaimer
 
-[![mihonapp/website - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=izukuX2&repo=website&bg_color=161B22&text_color=c9d1d9&title_color=0877d2&icon_color=0877d2&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/izukuX2/AnimeHAt/)
-[![mihonapp/bitmap.kt - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=izukuX2&repo=bitmap.kt&bg_color=161B22&text_color=c9d1d9&title_color=0877d2&icon_color=0877d2&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/izukuX2/bitmap.kt/)
+AnimeHat is an index of content providers and does not host any content itself. All streaming services are provided by third-party providers.
 
-### Credits
-
-Thank you to all the people who have contributed!
-
-<a href="https://github.com/izukuX2/AnimeHat/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=izukuX2/AnimeHat/" alt="AnimeHat app contributors" title="AnimeHat app contributors" width="800"/>
-</a>
-
-### Disclaimer
-
-The developer(s) of this application does not have any affiliation with the content providers available, and this application hosts zero content.
-
-### License
+## ⚖️ License
 
 <pre>
-Copyright © 2015 Javier Tomás
 Copyright © 2026 AnimeHat Open Source Project
+Copyright © 2015 Javier Tomás (Original Base)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,5 +74,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 </pre>
+
+---
+
+<p align="center">Made with ❤️ for the Anime Community</p>
 
 </div>
