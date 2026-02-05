@@ -163,14 +163,27 @@ cat $CHANGELOG >> $TEMP_CHANGELOG
 mv $TEMP_CHANGELOG $CHANGELOG
 
 # 6. Git Operations
+TRIGGER_RELEASE="n"
+if [ "$CHANNEL" == "stable" ] && [ "$FINAL_VERSION" != "$CURRENT_VERSION" ]; then
+    echo -e "\n${YELLOW}🚀 Create automated GitHub Release (APK)? [y/N]: ${NC}"
+    read -n 1 TRIGGER_RELEASE
+    echo ""
+fi
+
 echo -e "\n${CYAN}📦 Committing and Pushing...${NC}"
 git add .
 git commit -m "$MESSAGE"
 
-if [ "$FINAL_VERSION" != "$CURRENT_VERSION" ]; then
+if [[ "$TRIGGER_RELEASE" =~ ^[Yy]$ ]]; then
+    echo -e "${GREEN}🏷️ Creating Release Tag: v$FINAL_VERSION${NC}"
     git tag "v$FINAL_VERSION"
     git push origin main
     git push origin "v$FINAL_VERSION"
+elif [ "$FINAL_VERSION" != "$CURRENT_VERSION" ]; then
+    # Still version changed, but maybe not a formal release? 
+    # Usually we tag anyway for history, but if user said no to release, 
+    # we might just push the code.
+    git push origin main
 else
     git push origin main
 fi
