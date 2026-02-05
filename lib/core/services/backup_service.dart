@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart';
@@ -46,7 +47,7 @@ class BackupService {
       final dbFile = File(dbPath);
 
       if (!await dbFile.exists()) {
-        print('DB file does not exist at $dbPath');
+        debugPrint('DB file does not exist at $dbPath');
         return false;
       }
 
@@ -54,7 +55,7 @@ class BackupService {
       await dbFile.copy(targetPath);
       return true;
     } catch (e) {
-      print('Export failed: $e');
+      debugPrint('Export failed: $e');
       return false;
     }
   }
@@ -71,7 +72,7 @@ class BackupService {
       await sourceFile.copy(dbPath);
       return true;
     } catch (e) {
-      print('Import failed: $e');
+      debugPrint('Import failed: $e');
       return false;
     }
   }

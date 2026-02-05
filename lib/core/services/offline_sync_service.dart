@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../database/database_helper.dart';
 import '../models/anime_model.dart';
 import '../../features/home/data/home_repository.dart';
@@ -46,7 +47,7 @@ class OfflineSyncService {
           final episodes = await _repository.getEpisodes(anime.id);
           await _dbHelper.insertEpisodes(episodes);
         } catch (e) {
-          print('Failed to cache episodes for ${anime.enTitle}: $e');
+          debugPrint('Failed to cache episodes for ${anime.enTitle}: $e');
         }
         processed++;
         yield 0.5 + (0.5 * (processed / total));
@@ -54,7 +55,7 @@ class OfflineSyncService {
 
       yield 1.0;
     } catch (e) {
-      print('Sync failed: $e');
+      debugPrint('Sync failed: $e');
       yield -1.0; // Error state
     }
   }

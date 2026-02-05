@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:unity_ads_plugin/unity_ads_plugin.dart';
 import '../services/ad_service.dart';
@@ -33,14 +34,14 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         placementId: AdService.bannerPlacementId,
         size: BannerSize.standard,
         onLoad: (placementId) {
-          print('Banner loaded: $placementId');
+          debugPrint('Banner loaded: $placementId');
         },
-        onClick: (placementId) => print('Banner clicked: $placementId'),
+        onClick: (placementId) => debugPrint('Banner clicked: $placementId'),
         onFailed: (placementId, error, message) {
-          print('Banner ad failed: $placementId $error $message');
+          debugPrint('Banner ad failed: $placementId $error $message');
           // Retry after delay
           Future.delayed(const Duration(seconds: 30), () {
-            print('Retrying Banner Load...');
+            debugPrint('Retrying Banner Load...');
             _reloadAd();
           });
         },

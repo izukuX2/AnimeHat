@@ -274,26 +274,27 @@ class ThemeManager {
         color: config.cardColor,
         elevation:
             (type == AppThemeType.minimal || type == AppThemeType.minimalDark)
-            ? 0
-            : (isDark ? 0 : 2),
+                ? 0
+                : (isDark ? 0 : 2),
         shape:
             (type == AppThemeType.minimal || type == AppThemeType.minimalDark)
-            ? RoundedRectangleBorder(
-                side: BorderSide(
-                  color: type == AppThemeType.minimal
-                      ? Colors.black12
-                      : Colors.white12,
-                  width: 0.5,
-                ),
-              )
-            : RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  type == AppThemeType.modern ? 12 : 16,
-                ),
-                side: isDark
-                    ? BorderSide(color: config.textSecondary.withOpacity(0.1))
-                    : BorderSide.none,
-              ),
+                ? RoundedRectangleBorder(
+                    side: BorderSide(
+                      color: type == AppThemeType.minimal
+                          ? Colors.black12
+                          : Colors.white12,
+                      width: 0.5,
+                    ),
+                  )
+                : RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      type == AppThemeType.modern ? 12 : 16,
+                    ),
+                    side: isDark
+                        ? BorderSide(
+                            color: config.textSecondary.withValues(alpha: 0.1))
+                        : BorderSide.none,
+                  ),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -311,7 +312,8 @@ class ThemeManager {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+        fillColor:
+            (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -381,7 +383,7 @@ class ThemeManager {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: primary),
 
       dividerTheme: DividerThemeData(
-        color: config.textSecondary.withOpacity(0.2),
+        color: config.textSecondary.withValues(alpha: 0.2),
         thickness: 1,
         space: 1,
       ),
@@ -402,7 +404,7 @@ class ThemeManager {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return primary.withOpacity(0.5);
+            return primary.withValues(alpha: 0.5);
           }
           return null;
         }),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -60,13 +61,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           final newUser = await _userRepository.getUser(widget.uid);
           if (mounted) setState(() => _cachedUser = newUser);
         } catch (e) {
-          print('Sync failed (offline?): $e');
+          debugPrint('Sync failed (offline?): $e');
         }
       } else {
         if (mounted) setState(() => _cachedUser = user);
       }
     } catch (e) {
-      print('Error loading user: $e');
+      debugPrint('Error loading user: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -88,11 +89,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _cachedUser == null
-          ? Center(child: Text(l10n.userNotFound))
-          : RefreshIndicator(
-              onRefresh: _loadUserData,
-              child: _buildProfileContent(_cachedUser!, isMe, l10n),
-            ),
+              ? Center(child: Text(l10n.userNotFound))
+              : RefreshIndicator(
+                  onRefresh: _loadUserData,
+                  child: _buildProfileContent(_cachedUser!, isMe, l10n),
+                ),
     );
   }
 
@@ -123,7 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withValues(alpha: 0.7),
                         ],
                       ),
                     ),
@@ -321,12 +322,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       0,
       (sum, item) => sum + (item.positionInMs ~/ 60000),
     );
-    int completedAnime = user.library
-        .where((e) => e.category == 'Completed')
-        .length;
-    int watchingAnime = user.library
-        .where((e) => e.category == 'Watching')
-        .length;
+    int completedAnime =
+        user.library.where((e) => e.category == 'Completed').length;
+    int watchingAnime =
+        user.library.where((e) => e.category == 'Watching').length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -384,9 +383,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -474,9 +473,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     // Completionist
-    final completed = user.library
-        .where((e) => e.category == 'Completed')
-        .length;
+    final completed =
+        user.library.where((e) => e.category == 'Completed').length;
     if (completed >= 50) {
       badges.add(
         const _Badge('Elite', '🏆', 'Completed 50+ animes', Colors.red),
@@ -498,9 +496,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       width: 100,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: badge.color.withOpacity(0.1),
+        color: badge.color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: badge.color.withOpacity(0.4), width: 1.5),
+        border:
+            Border.all(color: badge.color.withValues(alpha: 0.4), width: 1.5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

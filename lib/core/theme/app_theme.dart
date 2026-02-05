@@ -10,8 +10,8 @@ class AppTheme {
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        background: AppColors.background,
-        onBackground: AppColors.textHeadline,
+        surface: AppColors.background,
+        onSurface: AppColors.textHeadline,
       ),
       scaffoldBackgroundColor: AppColors.background,
       textTheme: GoogleFonts.outfitTextTheme().copyWith(
@@ -72,24 +72,24 @@ class AppTheme {
         brightness: Brightness.dark,
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
-      textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
-          .copyWith(
-            headlineMedium: const TextStyle(
-              color: AppColors.darkTextHeadline,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-            ),
-            titleLarge: const TextStyle(
-              color: AppColors.darkTextHeadline,
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-            bodyLarge: const TextStyle(
-              color: AppColors.darkTextBody,
-              fontSize: 18,
-            ),
-            bodySmall: const TextStyle(color: Colors.white60, fontSize: 12),
-          ),
+      textTheme:
+          GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
+        headlineMedium: const TextStyle(
+          color: AppColors.darkTextHeadline,
+          fontWeight: FontWeight.bold,
+          fontSize: 24,
+        ),
+        titleLarge: const TextStyle(
+          color: AppColors.darkTextHeadline,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
+        ),
+        bodyLarge: const TextStyle(
+          color: AppColors.darkTextBody,
+          fontSize: 18,
+        ),
+        bodySmall: const TextStyle(color: Colors.white60, fontSize: 12),
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,

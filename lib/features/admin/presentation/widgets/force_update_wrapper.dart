@@ -33,8 +33,7 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
     final user = firebase_auth.FirebaseAuth.instance.currentUser;
     if (user == null) return widget.child;
 
-    final bool isAuthAdmin =
-        user.displayName?.toLowerCase() == 'admin' ||
+    final bool isAuthAdmin = user.displayName?.toLowerCase() == 'admin' ||
         user.email == 'admin@animehat.com';
 
     return StreamBuilder<AppUser?>(
@@ -43,9 +42,9 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
         final appUser = userSnapshot.data;
         final bool isPotentiallyAdmin =
             userSnapshot.connectionState == ConnectionState.waiting ||
-            (appUser?.isAdmin ?? false) ||
-            (appUser?.displayName.toLowerCase() == 'admin') ||
-            isAuthAdmin;
+                (appUser?.isAdmin ?? false) ||
+                (appUser?.displayName.toLowerCase() == 'admin') ||
+                isAuthAdmin;
 
         return StreamBuilder<GlobalSettings>(
           stream: _adminRepo.streamGlobalSettings(),
@@ -114,7 +113,10 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+            colors: [
+              AppColors.primary,
+              AppColors.primary.withValues(alpha: 0.8)
+            ],
           ),
         ),
         child: Center(
@@ -188,7 +190,7 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -274,8 +276,8 @@ class _ForceUpdateWrapperState extends State<ForceUpdateWrapper> {
       final updateService = UpdateService();
       final releaseData = await updateService.checkUpdate();
       if (releaseData != null) {
-        final assets = releaseData['assets'] as List<dynamic>?;
-        if (assets != null) {
+        final assets = releaseData.assets;
+        if (assets.isNotEmpty) {
           finalUrl = await updateService.getCompatibleApkUrl(assets);
         }
       }

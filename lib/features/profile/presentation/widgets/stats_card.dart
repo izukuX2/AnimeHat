@@ -28,12 +28,15 @@ class StatsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [cardColor.withOpacity(0.2), cardColor.withOpacity(0.05)],
+            colors: [
+              cardColor.withValues(alpha: 0.2),
+              cardColor.withValues(alpha: 0.05)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cardColor.withOpacity(0.3)),
+          border: Border.all(color: cardColor.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +44,7 @@ class StatsCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: cardColor.withOpacity(0.2),
+                color: cardColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: cardColor, size: 20),
@@ -169,7 +172,7 @@ class ProgressStatBar extends StatelessWidget {
             return Container(
               height: 8,
               decoration: BoxDecoration(
-                color: barColor.withOpacity(0.1),
+                color: barColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Align(
@@ -179,7 +182,7 @@ class ProgressStatBar extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [barColor, barColor.withOpacity(0.7)],
+                        colors: [barColor, barColor.withValues(alpha: 0.7)],
                       ),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -219,12 +222,12 @@ class AchievementBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isUnlocked
-              ? theme.primaryColor.withOpacity(0.15)
+              ? theme.primaryColor.withValues(alpha: 0.15)
               : theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isUnlocked
-                ? theme.primaryColor.withOpacity(0.3)
+                ? theme.primaryColor.withValues(alpha: 0.3)
                 : Colors.transparent,
           ),
         ),
@@ -244,7 +247,7 @@ class AchievementBadge extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(
                 color: isUnlocked
                     ? theme.colorScheme.onSurface
-                    : theme.colorScheme.onSurface.withOpacity(0.4),
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                 fontWeight: isUnlocked ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -294,7 +297,7 @@ class CircularStatIndicator extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: value,
                   strokeWidth: 6,
-                  backgroundColor: indicatorColor.withOpacity(0.1),
+                  backgroundColor: indicatorColor.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation(indicatorColor),
                 ),
               );
@@ -312,7 +315,7 @@ class CircularStatIndicator extends StatelessWidget {
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ],

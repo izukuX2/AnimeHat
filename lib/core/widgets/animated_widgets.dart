@@ -82,14 +82,14 @@ class _AnimatedCardState extends State<AnimatedCard>
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: _elevationAnimation.value * 2,
                     offset: Offset(0, _elevationAnimation.value),
                   ),
                   if (widget.enableGlow)
                     BoxShadow(
                       color: (widget.glowColor ?? theme.primaryColor)
-                          .withOpacity(0.2),
+                          .withValues(alpha: 0.2),
                       blurRadius: 20,
                       spreadRadius: -5,
                     ),
@@ -146,9 +146,13 @@ class _FadeInWidgetState extends State<FadeInWidget>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
-    Future.delayed(widget.delay, () {
-      if (mounted) _controller.forward();
-    });
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      Future.delayed(widget.delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
   }
 
   @override
@@ -265,29 +269,28 @@ class AnimatedHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Hero(
       tag: tag,
-      flightShuttleBuilder:
-          (
-            flightContext,
-            animation,
-            flightDirection,
-            fromHeroContext,
-            toHeroContext,
-          ) {
-            return AnimatedBuilder(
-              animation: animation,
-              builder: (context, _) {
-                return Material(
-                  color: Colors.transparent,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      borderRadius * (1 - animation.value * 0.5),
-                    ),
-                    child: child,
-                  ),
-                );
-              },
+      flightShuttleBuilder: (
+        flightContext,
+        animation,
+        flightDirection,
+        fromHeroContext,
+        toHeroContext,
+      ) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, _) {
+            return Material(
+              color: Colors.transparent,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  borderRadius * (1 - animation.value * 0.5),
+                ),
+                child: child,
+              ),
             );
           },
+        );
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
         child: child,

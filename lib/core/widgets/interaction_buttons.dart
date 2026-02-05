@@ -82,7 +82,7 @@ class InteractionButtons extends StatelessWidget {
           const Spacer(),
           IconButton(
             icon: const Icon(LucideIcons.trash2, size: 18),
-            color: Colors.redAccent.withOpacity(0.8),
+            color: Colors.redAccent.withValues(alpha: 0.8),
             onPressed: onDelete,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

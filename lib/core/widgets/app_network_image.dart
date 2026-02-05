@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -78,13 +79,13 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
           Container(
             width: widget.width,
             height: widget.height,
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           ),
       errorWidget: (context, url, error) {
-        print('DEBUG: Image Load Error ($currentCategory): $url - $error');
+        debugPrint('DEBUG: Image Load Error ($currentCategory): $url - $error');
         if (!_useFallback && widget.fallbackCategory != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) setState(() => _useFallback = true);
@@ -107,7 +108,7 @@ class _AppNetworkImageState extends State<AppNetworkImage> {
         Container(
           width: widget.width,
           height: widget.height,
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           child: Icon(
             _getFallbackIcon(category),
             size: (widget.width != null && widget.width! < 30) ? 12 : 30,

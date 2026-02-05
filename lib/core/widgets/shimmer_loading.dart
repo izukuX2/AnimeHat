@@ -1,6 +1,64 @@
 import 'package:flutter/material.dart';
 
 /// Enhanced shimmer loading widget with beautiful gradient animations
+/// A scope that provides a synchronized animation for all shimmers
+class ShimmerScope extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+
+  const ShimmerScope({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 2000),
+  });
+
+  static Animation<double>? of(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<_ShimmerScopeInherited>();
+    return scope?.animation;
+  }
+
+  @override
+  State<ShimmerScope> createState() => _ShimmerScopeState();
+}
+
+class _ShimmerScopeState extends State<ShimmerScope>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _animation = Tween<double>(begin: -2.5, end: 2.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ShimmerScopeInherited(animation: _animation, child: widget.child);
+  }
+}
+
+class _ShimmerScopeInherited extends InheritedWidget {
+  final Animation<double> animation;
+
+  const _ShimmerScopeInherited({required this.animation, required super.child});
+
+  @override
+  bool updateShouldNotify(_ShimmerScopeInherited oldWidget) =>
+      animation != oldWidget.animation;
+}
+
 class ShimmerLoading extends StatefulWidget {
   final double width;
   final double height;
@@ -15,7 +73,6 @@ class ShimmerLoading extends StatefulWidget {
     this.child,
   });
 
-  /// Creates a circular shimmer (for avatars)
   factory ShimmerLoading.circular({Key? key, required double size}) {
     return ShimmerLoading(
       key: key,
@@ -25,7 +82,6 @@ class ShimmerLoading extends StatefulWidget {
     );
   }
 
-  /// Creates a text-like shimmer
   factory ShimmerLoading.text({
     Key? key,
     double width = 100,
@@ -45,40 +101,50 @@ class ShimmerLoading extends StatefulWidget {
 
 class _ShimmerLoadingState extends State<ShimmerLoading>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  AnimationController? _localController;
+  Animation<double>? _localAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration:
-          const Duration(milliseconds: 2000), // Smoother, slower animation
-    );
-    _animation = Tween<double>(
-      begin: -2.5,
-      end: 2.5,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-    _controller.repeat();
+    // Only create local controller if no scope exists
+  }
+
+  void _ensureLocalController() {
+    if (_localController == null) {
+      _localController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 2000),
+      );
+      _localAnimation = Tween<double>(begin: -2.5, end: 2.5).animate(
+        CurvedAnimation(parent: _localController!, curve: Curves.easeInOut),
+      );
+      _localController!.repeat();
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _localController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final scopeAnimation = ShimmerScope.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final baseColor = isDark ? const Color(0xFF1C1C1E) : Colors.grey.shade200;
     final highlightColor =
         isDark ? const Color(0xFF2C2C2E) : Colors.grey.shade100;
 
+    if (scopeAnimation == null) {
+      _ensureLocalController();
+    }
+
+    final animation = scopeAnimation ?? _localAnimation!;
+
     return AnimatedBuilder(
-      animation: _animation,
+      animation: animation,
       builder: (context, child) {
         return Container(
           width: widget.width,
@@ -86,8 +152,8 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius),
             gradient: LinearGradient(
-              begin: Alignment(_animation.value - 1, -0.3),
-              end: Alignment(_animation.value + 1, 0.3),
+              begin: Alignment(animation.value - 1, -0.3),
+              end: Alignment(animation.value + 1, 0.3),
               colors: [baseColor, highlightColor, baseColor],
               stops: const [0.0, 0.5, 1.0],
             ),
@@ -99,26 +165,25 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
   }
 }
 
-/// Shimmer card placeholder for anime cards
 class ShimmerAnimeCard extends StatelessWidget {
   const ShimmerAnimeCard({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 170, // Matches new AnimeCard width
-      margin: const EdgeInsets.only(right: 16, bottom: 8),
+      width: 150, // More compact width
+      margin: const EdgeInsets.only(right: 12, bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Poster
-          const ShimmerLoading(width: 170, height: 240, borderRadius: 24),
-          const SizedBox(height: 12),
+          // Poster - Adjusted height to fit within 240-250px total
+          const ShimmerLoading(width: 150, height: 200, borderRadius: 20),
+          const SizedBox(height: 10),
           // Title
-          ShimmerLoading.text(width: 140, height: 16),
+          ShimmerLoading.text(width: 130, height: 14),
           const SizedBox(height: 6),
           // Subtitle
-          ShimmerLoading.text(width: 100, height: 14),
+          ShimmerLoading.text(width: 80, height: 12),
         ],
       ),
     );
@@ -225,7 +290,7 @@ class ShimmerProfileHeader extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                     ),
                   ],

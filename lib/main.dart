@@ -4,6 +4,7 @@ import 'l10n/app_localizations.dart';
 import 'core/theme/theme_manager.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
+import 'core/services/download_service.dart';
 import 'features/anime_details/presentation/screens/anime_details_screen.dart';
 import 'features/anime_playback/presentation/screens/episode_player_screen.dart';
 import 'core/models/anime_model.dart';
@@ -28,9 +29,20 @@ import 'core/repositories/admin_repository.dart';
 import 'features/admin/presentation/widgets/force_update_wrapper.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'features/schedule/presentation/screens/schedule_screen.dart';
+import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'core/widgets/error_boundary.dart';
 import 'core/theme/accent_colors.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'core/services/notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Handling a background message: ${message.messageId}");
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +51,12 @@ Future<void> main() async {
 
   // Initialize Supabase
   await Supabase.initialize(url: Env.supabaseUrl, anonKey: Env.supabaseAnonKey);
+
+  // Initialize Push Notifications
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await NotificationService().init();
+
+  await DownloadService().init();
 
   runApp(const AnimeHatApp());
 }
@@ -82,7 +100,7 @@ class _AnimeHatAppState extends State<AnimeHatApp> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => UpdateDialog(releaseData: releaseData),
+        builder: (context) => UpdateDialog(release: releaseData),
       );
     }
   }
@@ -182,6 +200,7 @@ class _AnimeHatAppState extends State<AnimeHatApp> {
   Widget build(BuildContext context) {
     return ErrorBoundary(
       child: MaterialApp(
+        navigatorKey: NotificationService().navigatorKey,
         debugShowCheckedModeBanner: false,
         locale: _locale,
         localizationsDelegates: const [
@@ -295,6 +314,7 @@ class _AnimeHatAppState extends State<AnimeHatApp> {
           ),
           '/admin': (context) => const AdminDashboardScreen(),
           '/schedule': (context) => const ScheduleScreen(),
+          '/notifications': (context) => const NotificationsScreen(),
         },
       ),
     );

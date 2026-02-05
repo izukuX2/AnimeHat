@@ -12,18 +12,17 @@ class SupabaseArchiveService {
     try {
       // Use upsert to insert or update if already exists
       await _supabase.from('animes').upsert({
-        'id': anime.animeId, // Explicitly using animeId as primary reference
+        'id': anime.animeId,
         'title': anime.enTitle,
         'poster': anime.thumbnail,
-        'synopsis': anime
-            .genres, // Using genres since synopsis is not in basic Anime model
+        'description':
+            anime.genres, // Using genres as description/synopsis fallback
         'rating': anime.rating,
         'status': anime.status,
-        'year': anime.premiered,
-        'metadata': anime
-            .toMap(), // Store full raw JSON/Map for future proofing
+        'type': anime.type,
+        'release_date': anime.premiered,
         'last_updated': DateTime.now().toIso8601String(),
-      }, onConflict: 'id'); // Ensure 'id' is the conflict constraint
+      }, onConflict: 'id');
       debugPrint('[Supabase] Archived Anime: ${anime.enTitle}');
       AdminRepository().logSystemEvent(
         message: 'Archived Anime: ${anime.enTitle}',
@@ -35,6 +34,32 @@ class SupabaseArchiveService {
         message: 'Failed to archive anime ${anime.animeId}: $e',
         type: 'error',
       );
+    }
+  }
+
+  static Future<bool> doesAnimeExist(String id) async {
+    try {
+      final res = await _supabase
+          .from('animes')
+          .select('id')
+          .eq('id', id)
+          .maybeSingle();
+      return res != null;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<List<String>> getExistingEpisodeNumbers(String animeId) async {
+    try {
+      final res = await _supabase
+          .from('episodes')
+          .select('episode_number')
+          .eq('anime_id', animeId);
+
+      return (res as List).map((e) => e['episode_number'].toString()).toList();
+    } catch (e) {
+      return [];
     }
   }
 
@@ -104,8 +129,17 @@ class SupabaseArchiveService {
       debugPrint(
         '[Supabase] Archived ${servers.length} servers for $episodeId',
       );
+      /*AdminRepository().logSystemEvent(
+        message: 'Archived ${servers.length} servers for Episode $episodeNumber',
+        type: 'success',
+      );*/
+      // Commented out success log to avoid flood, but error log is crucial.
     } catch (e) {
       debugPrint('[Supabase] Failed to archive servers for $episodeId: $e');
+      AdminRepository().logSystemEvent(
+        message: 'Failed to archive servers for $animeId Ep $episodeNumber: $e',
+        type: 'error',
+      );
     }
   }
 

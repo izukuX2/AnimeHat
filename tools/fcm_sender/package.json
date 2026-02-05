@@ -1,0 +1,13 @@
+{
+    "name": "anime-hat-notifier",
+    "version": "1.0.0",
+    "description": "Script to send FCM notifications for AnimeHat",
+    "main": "index.js",
+    "scripts": {
+        "send": "node index.js"
+    },
+    "dependencies": {
+        "firebase-admin": "^12.0.0",
+        "prompt-sync": "^4.2.0"
+    }
+}

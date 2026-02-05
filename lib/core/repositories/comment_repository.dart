@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/comment_model.dart';
 
@@ -6,10 +7,40 @@ class CommentRepository {
 
   Future<void> addComment(Comment comment) async {
     await _db.collection('comments').add(comment.toMap());
+
     if (comment.parentId != null) {
-      await _db.collection('comments').doc(comment.parentId).update({
-        'repliesCount': FieldValue.increment(1),
-      });
+      // 1. Increment replies count on parent
+      final parentRef = _db.collection('comments').doc(comment.parentId);
+      await parentRef.update({'repliesCount': FieldValue.increment(1)});
+
+      // 2. Notify Parent Author (Client-Side Logic)
+      try {
+        final parentSnapshot = await parentRef.get();
+        if (parentSnapshot.exists) {
+          final parentData = parentSnapshot.data();
+          final targetUid = parentData?['authorUid'];
+
+          if (targetUid != null && targetUid != comment.authorUid) {
+            await _db
+                .collection('users')
+                .doc(targetUid)
+                .collection('notifications')
+                .add({
+              'title': 'New Reply',
+              'body': '${comment.authorName} replied to your comment.',
+              'type': 'comment_reply',
+              'relatedId': comment.animeId,
+              'secondaryId':
+                  comment.parentId, // Link to the parent comment thread
+              'createdAt': FieldValue.serverTimestamp(),
+              'isRead': false,
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Error sending notification: $e');
+        // Non-blocking error
+      }
     }
   }
 
@@ -18,9 +49,8 @@ class CommentRepository {
     String? episodeNumber,
     String? parentId,
   }) {
-    Query query = _db
-        .collection('comments')
-        .orderBy('createdAt', descending: true);
+    Query query =
+        _db.collection('comments').orderBy('createdAt', descending: true);
 
     if (animeId != null) {
       query = query.where('animeId', isEqualTo: animeId);

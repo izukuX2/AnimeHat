@@ -90,7 +90,7 @@ class _AnimeCardState extends State<AnimeCard>
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -117,8 +117,8 @@ class _AnimeCardState extends State<AnimeCard>
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.1),
-                        Colors.black.withOpacity(0.9),
+                        Colors.black.withValues(alpha: 0.1),
+                        Colors.black.withValues(alpha: 0.9),
                       ],
                       stops: const [0.4, 0.7, 1.0],
                     ),
@@ -151,7 +151,7 @@ class _AnimeCardState extends State<AnimeCard>
                       Text(
                         widget.subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -193,7 +193,7 @@ class _AnimeCardState extends State<AnimeCard>
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
+                          color: Colors.amber.withValues(alpha: 0.3),
                           blurRadius: 4,
                         ),
                       ],
@@ -236,7 +236,8 @@ class _AnimeCardState extends State<AnimeCard>
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black45 : Colors.grey.withOpacity(0.2),
+              color:
+                  isDark ? Colors.black45 : Colors.grey.withValues(alpha: 0.2),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -259,8 +260,8 @@ class _AnimeCardState extends State<AnimeCard>
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.1),
-                      Colors.black.withOpacity(0.95),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.95),
                     ],
                     stops: const [0.5, 0.75, 1.0],
                   ),
@@ -298,7 +299,7 @@ class _AnimeCardState extends State<AnimeCard>
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.amber.withOpacity(0.3),
+                          color: Colors.amber.withValues(alpha: 0.3),
                           blurRadius: 6,
                         ),
                       ],
@@ -344,7 +345,7 @@ class _AnimeCardState extends State<AnimeCard>
                       Text(
                         widget.subtitle!,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -370,9 +371,10 @@ class _AnimeCardState extends State<AnimeCard>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2), width: 1),
           ),
           child: child,
         ),

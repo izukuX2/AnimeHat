@@ -51,9 +51,8 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
   String _getRangeLabel(int pageIndex) {
     final start = pageIndex * _pageSize + 1;
     final end = (pageIndex + 1) * _pageSize;
-    final actualEnd = end > widget.episodes.length
-        ? widget.episodes.length
-        : end;
+    final actualEnd =
+        end > widget.episodes.length ? widget.episodes.length : end;
     return '$start - $actualEnd';
   }
 
@@ -64,12 +63,11 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
     if (user != null) {
       final appUser = await _userRepository.getUser(user.uid);
       if (appUser != null) {
-        final historyItem =
-            appUser.history.any(
-              (e) =>
-                  e.animeId == widget.anime.animeId &&
-                  e.episodeNumber == ep.episodeNumber,
-            )
+        final historyItem = appUser.history.any(
+          (e) =>
+              e.animeId == widget.anime.animeId &&
+              e.episodeNumber == ep.episodeNumber,
+        )
             ? appUser.history.firstWhere(
                 (e) =>
                     e.animeId == widget.anime.animeId &&
@@ -162,8 +160,8 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? (isDark
-                                  ? AppColors.darkPrimary
-                                  : AppColors.primary)
+                                ? AppColors.darkPrimary
+                                : AppColors.primary)
                             : (isDark ? Colors.grey[800] : Colors.grey[200]),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -174,9 +172,8 @@ class _EpisodesListScreenState extends State<EpisodesListScreen> {
                           color: isSelected
                               ? Colors.white
                               : (isDark ? Colors.white70 : Colors.black87),
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),

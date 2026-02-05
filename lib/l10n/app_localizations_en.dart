@@ -572,4 +572,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get autoSkipIntro => 'Auto Skip Intro';
+
+  @override
+  String get googleSignIn => 'Sign in with Google';
+
+  @override
+  String get or => 'or';
+
+  @override
+  String get checkingForUpdates => 'Checking for updates...';
+
+  @override
+  String get appUpToDate => 'You have the latest version!';
+
+  @override
+  String get updateAvailable => 'Update Available';
 }

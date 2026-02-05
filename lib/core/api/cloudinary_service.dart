@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class CloudinaryService {
   final String cloudName;
@@ -25,11 +26,12 @@ class CloudinaryService {
         final jsonMap = jsonDecode(responseString);
         return jsonMap['secure_url'];
       } else {
-        print('Cloudinary upload failed with status: ${response.statusCode}');
+        debugPrint(
+            'Cloudinary upload failed with status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('Error uploading to Cloudinary: $e');
+      debugPrint('Error uploading to Cloudinary: $e');
       return null;
     }
   }

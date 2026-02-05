@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/env.dart';
+
 class MalService {
-  static const String clientId = 'e727d66e561a4b88586ba6c695f4e05f';
+  static const String clientId = Env.malClientId;
   static const String redirectUri = 'animehat://auth';
 
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://api.myanimelist.net/v2'));

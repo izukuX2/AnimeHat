@@ -197,5 +197,10 @@
   "title": "Title",
   "content": "Content",
   "skipIntro": "Skip Intro",
-  "autoSkipIntro": "Auto Skip Intro"
+  "autoSkipIntro": "Auto Skip Intro",
+  "googleSignIn": "Sign in with Google",
+  "or": "or",
+  "checkingForUpdates": "Checking for updates...",
+  "appUpToDate": "You have the latest version!",
+  "updateAvailable": "Update Available"
 }

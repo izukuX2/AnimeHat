@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/anime_model.dart';
@@ -17,7 +18,7 @@ class CacheService {
     final data = animes.map((a) => a.toMap()).toList();
     await prefs.setString(_trendingCacheKey, jsonEncode(data));
     await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-    print("CACHE UPDATED: ${animes.length} trending items saved.");
+    debugPrint("CACHE UPDATED: ${animes.length} trending items saved.");
   }
 
   /// Retrieve cached trending anime
@@ -30,7 +31,7 @@ class CacheService {
       final List<dynamic> data = jsonDecode(dataStr);
       return data.map((json) => Anime.fromJson(json)).toList();
     } catch (e) {
-      print("CACHE ERROR: Failed to parse trending cache: $e");
+      debugPrint("CACHE ERROR: Failed to parse trending cache: $e");
       return [];
     }
   }

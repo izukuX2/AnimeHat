@@ -187,5 +187,10 @@
   "title": "العنوان",
   "content": "المحتوى",
   "skipIntro": "تخطي البداية",
-  "autoSkipIntro": "تخطي تلقائي للبداية"
+  "autoSkipIntro": "تخطي البداية تلقائياً",
+  "googleSignIn": "تسجيل الدخول عبر جوجل",
+  "or": "أو",
+  "checkingForUpdates": "جاري التحقق من التحديثات...",
+  "appUpToDate": "أنت تستخدم أحدث إصدار!",
+  "updateAvailable": "تحديث متوفر"
 }

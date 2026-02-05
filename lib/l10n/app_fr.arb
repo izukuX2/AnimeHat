@@ -174,7 +174,9 @@
   "ensureLatestVersion": "Assurez-vous d'utiliser la dernière version",
   "continueWatching": "Continuer à regarder",
   "skipIntro": "Passer l'Intro",
-  "autoSkipIntro": "Passer l'intro automatiquement",
+  "autoSkipIntro": "Sauter l'intro automatiquement",
+  "googleSignIn": "Se connecter avec Google",
+  "or": "ou",
   "userNotFound": "Utilisateur introuvable",
   "overview": "Aperçu",
   "activity": "Activité",
@@ -187,5 +189,8 @@
   "joined": "Inscrit",
   "noRecentActivity": "Aucune activité récente",
   "editProfile": "Modifier le Profil",
-  "signInOrCreateAccount": "Se connecter/Créer un compte"
+  "signInOrCreateAccount": "Se connecter/Créer un compte",
+  "checkingForUpdates": "Vérification des mises à jour...",
+  "appUpToDate": "Vous avez la dernière version !",
+  "updateAvailable": "Mise à jour disponible"
 }

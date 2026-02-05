@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,7 +57,7 @@ class AnilistService {
         options: Options(headers: {'Authorization': 'Bearer $token'}),
       );
     } catch (e) {
-      print('Anilist update error: $e');
+      debugPrint('Anilist update error: $e');
     }
   }
 }

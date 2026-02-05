@@ -583,5 +583,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get skipIntro => 'Passer l\'Intro';
 
   @override
-  String get autoSkipIntro => 'Passer l\'intro automatiquement';
+  String get autoSkipIntro => 'Sauter l\'intro automatiquement';
+
+  @override
+  String get googleSignIn => 'Se connecter avec Google';
+
+  @override
+  String get or => 'ou';
+
+  @override
+  String get checkingForUpdates => 'Vérification des mises à jour...';
+
+  @override
+  String get appUpToDate => 'Vous avez la dernière version !';
+
+  @override
+  String get updateAvailable => 'Mise à jour disponible';
 }

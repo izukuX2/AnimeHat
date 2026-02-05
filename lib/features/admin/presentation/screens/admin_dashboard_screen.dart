@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/ad_service.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/services/data_sync_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -36,12 +37,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       TextEditingController();
   String _announcementType = 'info';
   final TextEditingController _userSearchController = TextEditingController();
+
   String _userSearchQuery = '';
+
+  // Sync State
+  final DataSyncService _dataSync = DataSyncService();
+  bool _syncContent = false;
+  double _syncProgress = 0.0; // Optional if we want a bar
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _verifyAdminAccess();
     _loadSettings();
   }
@@ -60,8 +67,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
       );
       final isNameAdmin = appUser?.displayName.toLowerCase() == 'admin';
       final isAdminFlag = appUser?.isAdmin ?? false;
-      final isAuthAdmin =
-          user.displayName?.toLowerCase() == 'admin' ||
+      final isAuthAdmin = user.displayName?.toLowerCase() == 'admin' ||
           user.email == 'admin@animehat.com';
 
       if (!isNameAdmin && !isAdminFlag && !isAuthAdmin) {
@@ -160,6 +166,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       Tab(text: l10n.featured),
                       Tab(text: l10n.users),
                       Tab(text: l10n.announce),
+                      const Tab(text: 'Sync'),
                     ],
                   ),
                 ),
@@ -174,6 +181,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
                       _buildFeaturedTab(isDark, l10n),
                       _buildUsersTab(isDark, l10n),
                       _buildAnnouncementsTab(isDark, l10n),
+                      _buildSyncTab(isDark, l10n),
                     ],
                   ),
                 ),
@@ -749,9 +757,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               var users = snapshot.data!;
               if (_userSearchQuery.isNotEmpty) {
                 users = users.where((u) {
-                  final name = (u['displayName'] ?? '')
-                      .toString()
-                      .toLowerCase();
+                  final name =
+                      (u['displayName'] ?? '').toString().toLowerCase();
                   final email = (u['email'] ?? '').toString().toLowerCase();
                   return name.contains(_userSearchQuery) ||
                       email.contains(_userSearchQuery);
@@ -925,5 +932,182 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildSyncTab(bool isDark, AppLocalizations l10n) {
+    return StreamBuilder<SyncState>(
+      stream: _dataSync.stateStream,
+      initialData: _dataSync.currentState,
+      builder: (context, snapshot) {
+        final state = snapshot.data!;
+        final isSyncing = state.status == SyncStatus.syncing;
+        final logs = _dataSync.logs;
+
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildAdminSection(
+                title: 'Data Synchronization',
+                isDark: isDark,
+                child: Column(
+                  children: [
+                    const Text(
+                      'Sync data from Animeify API to Supabase. This process fetches anime in batches and archives them.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Include Episodes & Servers'),
+                      subtitle: const Text(
+                          'Warning: significantly increases sync time'),
+                      value: _syncContent,
+                      onChanged: isSyncing
+                          ? null
+                          : (val) => setState(() => _syncContent = val),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              if (isSyncing) {
+                                _dataSync.stopSync();
+                              } else {
+                                _startSyncAnime();
+                              }
+                            },
+                            icon: isSyncing
+                                ? const Icon(LucideIcons.stopCircle)
+                                : const Icon(LucideIcons.refreshCw),
+                            label: Text(
+                                isSyncing ? 'Stop Sync' : 'Sync All Anime'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  isSyncing ? Colors.red : AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: isSyncing ? null : _startSyncCharacters,
+                            icon:
+                                isSyncing && state.message.contains('Character')
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Icon(LucideIcons.users),
+                            label: const Text('Sync Characters'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Sync Logs',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    _dataSync.clearLogs();
+                                    setState(() {});
+                                  },
+                                  child: const Text('Clear Log'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    await _dataSync.resetSyncProgress();
+                                    if (mounted) setState(() {});
+                                  },
+                                  child: const Text('Reset Info',
+                                      style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: logs.length,
+                          // Reverse to show latest at top or keep standard?
+                          // Let's standard list, auto scroll maybe?
+                          // Implementation kept reverse based on previous code logic intent (index math)
+                          // But previous code did logs[length - 1 - index].
+                          // Let's do that to show newest at TOP.
+                          itemBuilder: (context, index) {
+                            final log = logs[logs.length - 1 - index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                log,
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 12,
+                                  color: _getLogColorForSync(log),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getLogColorForSync(String log) {
+    if (log.contains('[ERROR]')) return Colors.red;
+    if (log.contains('[DONE]') || log.contains('Success')) return Colors.green;
+    return Colors.grey;
+  }
+
+  Future<void> _startSyncAnime() async {
+    // No need to set state here, the service and stream builder handle it
+    await _dataSync.startSyncAnime(syncContent: _syncContent);
+  }
+
+  Future<void> _startSyncCharacters() async {
+    await _dataSync.startSyncCharacters();
   }
 }

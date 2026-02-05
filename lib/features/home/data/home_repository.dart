@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/api/animeify_api_client.dart';
 import '../../../core/models/anime_model.dart';
 import '../../../core/models/character_model.dart';
@@ -165,7 +166,7 @@ class HomeRepository {
       final anime = Anime.fromJson(json);
       await _dbHelper.insertAnime(anime);
     } catch (e) {
-      print("Background cache update failed for $animeId: $e");
+      debugPrint("Background cache update failed for $animeId: $e");
     }
   }
 

@@ -49,6 +49,26 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await _authRepository.signInWithGoogle();
+      if (user != null && mounted) {
+        Navigator.pushReplacementNamed(context, '/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -126,6 +146,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
                 _buildLoginButton(isDark, l10n),
+                const SizedBox(height: 20),
+                _buildOrDivider(isDark, l10n),
+                const SizedBox(height: 20),
+                _buildGoogleButton(isDark, l10n),
                 const SizedBox(height: 30),
                 Center(
                   child: TextButton(
@@ -234,6 +258,65 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: Colors.white,
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildOrDivider(bool isDark, AppLocalizations l10n) {
+    final color = (isDark ? Colors.white : Colors.black).withOpacity(0.2);
+    return Row(
+      children: [
+        Expanded(child: Divider(color: color)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            l10n.or.toUpperCase(),
+            style: TextStyle(
+              color: (isDark ? Colors.white : Colors.black).withOpacity(0.4),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: color)),
+      ],
+    );
+  }
+
+  Widget _buildGoogleButton(bool isDark, AppLocalizations l10n) {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: OutlinedButton(
+        onPressed: _isLoading ? null : _handleGoogleSignIn,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor:
+              (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.network(
+              'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_\"G\"_Logo.svg/1200px-Google_\"G\"_Logo.svg.png',
+              height: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              l10n.googleSignIn,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/api/animeify_api_client.dart';
 import '../../../core/models/anime_model.dart';
 import '../../../core/repositories/anime_firestore_repository.dart';
@@ -19,7 +20,7 @@ class AnimeRepository {
     // Check cache first
     final cached = await _firestore.getCachedAnime(animeId);
     if (cached != null && cached['details'] != null) {
-      print('DEBUG: Using cached anime details for $animeId');
+      debugPrint('DEBUG: Using cached anime details for $animeId');
       return AnimeDetails.fromJson(cached['details']);
     }
 
@@ -42,7 +43,7 @@ class AnimeRepository {
           plot: details.plot.length < 20 ? jikanDetails.synopsis : details.plot,
         );
       } catch (e) {
-        print('DEBUG: Jikan merge error: $e');
+        debugPrint('DEBUG: Jikan merge error: $e');
         // Continue with Animeify details only
       }
     }
@@ -66,7 +67,7 @@ class AnimeRepository {
     // Check cache first
     final cached = await _firestore.getCachedEpisodes(animeId);
     if (cached != null) {
-      print('DEBUG: Using cached episodes for $animeId');
+      debugPrint('DEBUG: Using cached episodes for $animeId');
       return _sortEpisodes(cached);
     }
 
@@ -87,12 +88,13 @@ class AnimeRepository {
 
   /// Sort episodes numerically (handles "1", "1.5", "10", "100", "1000" correctly)
   List<Episode> _sortEpisodes(List<Episode> episodes) {
-    return List<Episode>.from(episodes)..sort((a, b) {
-      // Parse episode numbers as doubles to handle decimals like "1.5"
-      final numA = double.tryParse(a.episodeNumber) ?? 0;
-      final numB = double.tryParse(b.episodeNumber) ?? 0;
-      return numA.compareTo(numB);
-    });
+    return List<Episode>.from(episodes)
+      ..sort((a, b) {
+        // Parse episode numbers as doubles to handle decimals like "1.5"
+        final numA = double.tryParse(a.episodeNumber) ?? 0;
+        final numB = double.tryParse(b.episodeNumber) ?? 0;
+        return numA.compareTo(numB);
+      });
   }
 
   Future<List<StreamingServer>> getServers(
@@ -100,7 +102,7 @@ class AnimeRepository {
     String episodeNumber,
   ) async {
     if (animeId.isEmpty || episodeNumber.isEmpty) {
-      print(
+      debugPrint(
         'DEBUG: Skipping getServers for $animeId Ep $episodeNumber (Empty ID or Ep)',
       );
       return [];
@@ -109,7 +111,7 @@ class AnimeRepository {
     // Check cache first
     final cached = await _firestore.getCachedServers(animeId, episodeNumber);
     if (cached != null) {
-      print('DEBUG: Using cached servers for $animeId Ep $episodeNumber');
+      debugPrint('DEBUG: Using cached servers for $animeId Ep $episodeNumber');
       return cached;
     }
 
@@ -180,7 +182,8 @@ class AnimeRepository {
 
       return servers;
     } catch (e) {
-      print('DEBUG: Error fetching servers for $animeId Ep $episodeNumber: $e');
+      debugPrint(
+          'DEBUG: Error fetching servers for $animeId Ep $episodeNumber: $e');
       return []; // Return empty list on failure
     }
   }

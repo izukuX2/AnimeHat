@@ -570,5 +570,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get skipIntro => 'تخطي البداية';
 
   @override
-  String get autoSkipIntro => 'تخطي تلقائي للبداية';
+  String get autoSkipIntro => 'تخطي البداية تلقائياً';
+
+  @override
+  String get googleSignIn => 'تسجيل الدخول عبر جوجل';
+
+  @override
+  String get or => 'أو';
+
+  @override
+  String get checkingForUpdates => 'جاري التحقق من التحديثات...';
+
+  @override
+  String get appUpToDate => 'أنت تستخدم أحدث إصدار!';
+
+  @override
+  String get updateAvailable => 'تحديث متوفر';
 }

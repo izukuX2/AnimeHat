@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/local_storage_service.dart';
@@ -13,7 +14,7 @@ class UserRepository {
         .doc(user.uid)
         .set(user.toMap(), SetOptions(merge: true))
         .then((_) => _local.saveUser(user))
-        .catchError((e) => print("Error creating user: $e"));
+        .catchError((e) => debugPrint("Error creating user: $e"));
   }
 
   Future<void> syncUser(
@@ -33,23 +34,27 @@ class UserRepository {
           joinDate: DateTime.now(),
         ),
       );
-      print("User document created for $uid");
+      debugPrint("User document created for $uid");
     } else {
       final data = doc.data()!;
       // HEALING LOGIC: Detect misplaced fields and pull them to root
       final currentAdmin = AppUser.parseAdminFlag(data);
-      final currentPhoto = AppUser.parsePhotoUrl(data);
 
-      final updates = {
+      final updates = <String, dynamic>{
         'email': email,
-        'displayName':
-            displayName ?? data['displayName'] ?? email.split('@')[0],
-        'photoUrl': photoUrl ?? currentPhoto ?? data['photoUrl'],
         'isAdmin': currentAdmin,
         'lastSynced': FieldValue.serverTimestamp(),
       };
 
-      print("HEALING USER: Moving nested fields to root for $uid");
+      // Only set if they are currently null in Firestore (keep existing info)
+      if (data['displayName'] == null && displayName != null) {
+        updates['displayName'] = displayName;
+      }
+      if (data['photoUrl'] == null && photoUrl != null) {
+        updates['photoUrl'] = photoUrl;
+      }
+
+      debugPrint("HEALING USER: Moving nested fields to root for $uid");
       await _db
           .collection('users')
           .doc(uid)
@@ -67,7 +72,7 @@ class UserRepository {
       if (cachedUser != null && cachedUser.uid == uid) {
         // In background, try to refresh if online, but don't wait for it
         _fetchAndCacheUser(uid).catchError((e) {
-          print("Background fetch failed (offline?): $e");
+          debugPrint("Background fetch failed (offline?): $e");
           return null;
         });
         return cachedUser;
@@ -96,7 +101,7 @@ class UserRepository {
         return user;
       }
     } catch (e) {
-      print("Error fetching user for cache: $e");
+      debugPrint("Error fetching user for cache: $e");
       // If server fetch failed, try to return local as last resort
       return await _local.getUser();
     }
@@ -118,29 +123,25 @@ class UserRepository {
       }
 
       // 2. Then listen for Firestore updates
-      firestoreSub = _db
-          .collection('users')
-          .doc(uid)
-          .snapshots()
-          .listen(
-            (doc) {
-              if (doc.exists && doc.data() != null) {
-                final user = AppUser.fromMap(doc.data()!);
-                _local.saveUser(user); // update cache
-                if (!controller.isClosed) controller.add(user);
-              } else {
-                if (!controller.isClosed) {
-                  controller.add(
-                    (cached != null && cached.uid == uid) ? cached : null,
-                  );
-                }
-              }
-            },
-            onError: (e) {
-              print("Error in user stream: $e");
-              // On error, we still have the cached value emitted already
-            },
-          );
+      firestoreSub = _db.collection('users').doc(uid).snapshots().listen(
+        (doc) {
+          if (doc.exists && doc.data() != null) {
+            final user = AppUser.fromMap(doc.data()!);
+            _local.saveUser(user); // update cache
+            if (!controller.isClosed) controller.add(user);
+          } else {
+            if (!controller.isClosed) {
+              controller.add(
+                (cached != null && cached.uid == uid) ? cached : null,
+              );
+            }
+          }
+        },
+        onError: (e) {
+          debugPrint("Error in user stream: $e");
+          // On error, we still have the cached value emitted already
+        },
+      );
     }
 
     controller.onListen = () {
@@ -319,7 +320,6 @@ class UserRepository {
     if (uid.isEmpty) return;
     final Map<String, dynamic> updates = {};
     if (bio != null) updates['bio'] = bio;
-    if (bio != null) updates['bio'] = bio;
     if (displayName != null) updates['displayName'] = displayName;
     if (photoUrl != null) updates['photoUrl'] = photoUrl;
     if (coverPhotoUrl != null) updates['coverPhotoUrl'] = coverPhotoUrl;
@@ -329,6 +329,19 @@ class UserRepository {
       await _db.collection('users').doc(uid).update(updates);
       // Re-load and cache fresh data
       _fetchAndCacheUser(uid);
+    }
+  }
+
+  Future<void> updateFcmToken(String uid, String token) async {
+    if (uid.isEmpty || token.isEmpty) return;
+    try {
+      await _db
+          .collection('users')
+          .doc(uid)
+          .set({'fcmToken': token}, SetOptions(merge: true)).catchError(
+              (e) => debugPrint("Error updating FCM token: $e"));
+    } catch (e) {
+      debugPrint("Error updating FCM token: $e");
     }
   }
 }

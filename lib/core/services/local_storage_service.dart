@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
@@ -17,7 +18,7 @@ class LocalStorageService {
       try {
         return AppUser.fromMap(jsonDecode(userJson));
       } catch (e) {
-        print("Error decoding cached user: $e");
+        debugPrint("Error decoding cached user: $e");
         return null;
       }
     }

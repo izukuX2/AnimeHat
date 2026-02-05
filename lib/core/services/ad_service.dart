@@ -1,4 +1,5 @@
 import 'package:unity_ads_plugin/unity_ads_plugin.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,14 +19,15 @@ class AdService {
       // Load user preference
       final prefs = await SharedPreferences.getInstance();
       _adsEnabled = prefs.getBool('ads_enabled') ?? false; // Default to false
-      print('DEBUG: Local Ads Preference: $_adsEnabled');
+      debugPrint('DEBUG: Local Ads Preference: $_adsEnabled');
 
       await UnityAds.init(
         gameId: gameId,
         testMode: false, // Set to false for production
-        onComplete: () => print('DEBUG: Unity Ads Initialized Successfully'),
+        onComplete: () =>
+            debugPrint('DEBUG: Unity Ads Initialized Successfully'),
         onFailed: (error, message) =>
-            print('DEBUG: Unity Ads Init Failed: $error - $message'),
+            debugPrint('DEBUG: Unity Ads Init Failed: $error - $message'),
       );
 
       // Attempt to load ads initially if enabled
@@ -34,7 +36,7 @@ class AdService {
         loadRewarded();
       }
     } catch (e) {
-      print('DEBUG: Unity Ads Init Error: $e');
+      debugPrint('DEBUG: Unity Ads Init Error: $e');
     }
   }
 
@@ -43,7 +45,7 @@ class AdService {
     _adsEnabled = enabled;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('ads_enabled', enabled);
-    print('DEBUG: AdService updated: adsEnabled = $_adsEnabled');
+    debugPrint('DEBUG: AdService updated: adsEnabled = $_adsEnabled');
 
     if (enabled) {
       loadInterstitial();
@@ -57,12 +59,13 @@ class AdService {
     if (!_adsEnabled) return;
     await UnityAds.load(
       placementId: interstitialPlacementId,
-      onComplete: (placementId) => print('Interstitial Loaded: $placementId'),
+      onComplete: (placementId) =>
+          debugPrint('Interstitial Loaded: $placementId'),
       onFailed: (placementId, error, message) {
-        print('Interstitial Load Failed: $placementId $error $message');
+        debugPrint('Interstitial Load Failed: $placementId $error $message');
         // Retry after delay
         Future.delayed(const Duration(seconds: 30), () {
-          print('Retrying Interstitial Load...');
+          debugPrint('Retrying Interstitial Load...');
           loadInterstitial();
         });
       },
@@ -74,13 +77,13 @@ class AdService {
     await UnityAds.showVideoAd(
       placementId: interstitialPlacementId,
       onComplete: (placementId) =>
-          print('Interstitial Ad Complete: $placementId'),
+          debugPrint('Interstitial Ad Complete: $placementId'),
       onFailed: (placementId, error, message) =>
-          print('Interstitial Ad Failed: $placementId $error $message'),
-      onStart: (placementId) => print('Interstitial Ad Start: $placementId'),
-      onClick: (placementId) => print('Interstitial Ad Click: $placementId'),
+          debugPrint('Interstitial Ad Failed: $placementId $error $message'),
+      onStart: (placementId) =>
+          debugPrint('Interstitial Ad Start: $placementId'),
       onSkipped: (placementId) =>
-          print('Interstitial Ad Skipped: $placementId'),
+          debugPrint('Interstitial Ad Skipped: $placementId'),
     );
     // Reload for next time
     loadInterstitial();
@@ -92,12 +95,12 @@ class AdService {
     if (!_adsEnabled) return;
     await UnityAds.load(
       placementId: rewardedPlacementId,
-      onComplete: (placementId) => print('Rewarded Loaded: $placementId'),
+      onComplete: (placementId) => debugPrint('Rewarded Loaded: $placementId'),
       onFailed: (placementId, error, message) {
-        print('Rewarded Load Failed: $placementId $error $message');
+        debugPrint('Rewarded Load Failed: $placementId $error $message');
         // Retry after delay
         Future.delayed(const Duration(seconds: 30), () {
-          print('Retrying Rewarded Load...');
+          debugPrint('Retrying Rewarded Load...');
           loadRewarded();
         });
       },
@@ -112,18 +115,19 @@ class AdService {
     await UnityAds.showVideoAd(
       placementId: rewardedPlacementId,
       onComplete: (placementId) {
-        print('Rewarded Ad Complete: $placementId');
+        debugPrint('Rewarded Ad Complete: $placementId');
         onComplete(placementId);
         // Reload for next time
         loadRewarded();
       },
       onFailed: (placementId, error, message) {
-        print('Rewarded Ad Failed: $placementId $error $message');
+        debugPrint('Rewarded Ad Failed: $placementId $error $message');
         if (onFailed != null) onFailed();
       },
-      onStart: (placementId) => print('Rewarded Ad Start: $placementId'),
-      onClick: (placementId) => print('Rewarded Ad Click: $placementId'),
-      onSkipped: (placementId) => print('Rewarded Ad Skipped: $placementId'),
+      onStart: (placementId) => debugPrint('Rewarded Ad Start: $placementId'),
+      onClick: (placementId) => debugPrint('Rewarded Ad Click: $placementId'),
+      onSkipped: (placementId) =>
+          debugPrint('Rewarded Ad Skipped: $placementId'),
     );
   }
 }

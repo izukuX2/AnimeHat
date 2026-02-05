@@ -1221,6 +1221,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto Skip Intro'**
   String get autoSkipIntro;
+
+  /// No description provided for @googleSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Google'**
+  String get googleSignIn;
+
+  /// No description provided for @or.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get or;
+
+  /// No description provided for @checkingForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get checkingForUpdates;
+
+  /// No description provided for @appUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'You have the latest version!'**
+  String get appUpToDate;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available'**
+  String get updateAvailable;
 }
 
 class _AppLocalizationsDelegate

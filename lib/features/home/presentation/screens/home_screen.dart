@@ -271,6 +271,13 @@ class _HomeScreenState extends State<HomeScreen>
       actions: [
         IconButton(
           icon: Icon(
+            Icons.notifications_outlined,
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
+          onPressed: () => Navigator.pushNamed(context, '/notifications'),
+        ),
+        IconButton(
+          icon: Icon(
             LucideIcons.settings,
             color: isDark ? Colors.white70 : Colors.black54,
           ),
@@ -281,101 +288,163 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildHomeView(bool isDark, AppLocalizations l10n) {
-    return RefreshIndicator(
-      onRefresh: () async => _refreshData(),
-      color: AppColors.primary,
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
-        ),
-        slivers: [
-          // Admin Announcements
-          SliverToBoxAdapter(child: _buildAdminAnnouncements(isDark)),
-
-          // Quick Categories
-          SliverToBoxAdapter(child: _buildQuickCategories(isDark, l10n)),
-
-          // Admin Featured section
-          SliverToBoxAdapter(child: _buildAdminFeatured(isDark)),
-
-          // Trending Carousel
-          SliverToBoxAdapter(
-            child: FutureBuilder<List<TrendingItem>>(
-              future: _trendingItemsFuture,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const SizedBox(height: 20);
-                }
-                return _buildTrendingCarousel(snapshot.data!, isDark, l10n);
-              },
-            ),
+    return ShimmerScope(
+      child: RefreshIndicator(
+        onRefresh: () async => _refreshData(),
+        color: AppColors.primary,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
+          slivers: [
+            // Admin Announcements
+            SliverToBoxAdapter(child: _buildAdminAnnouncements(isDark)),
 
-          // Content sections
-          FutureBuilder<HomeData>(
-            future: _homeDataFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return SliverToBoxAdapter(child: _buildShimmerLoading(isDark));
-              }
+            // Quick Categories
+            SliverToBoxAdapter(child: _buildQuickCategories(isDark, l10n)),
 
-              if (snapshot.hasError || !snapshot.hasData) {
-                return SliverFillRemaining(child: _buildOfflineView(isDark));
-              }
+            // Admin Featured section
+            SliverToBoxAdapter(child: _buildAdminFeatured(isDark)),
 
-              final homeData = snapshot.data!;
-              return SliverList(
-                delegate: SliverChildListDelegate([
-                  // Continue Watching
-                  FadeInWidget(
-                    delay: const Duration(milliseconds: 100),
-                    child: _buildContinueWatching(isDark, l10n),
-                  ),
+            // Trending Carousel
+            SliverToBoxAdapter(
+              child: FutureBuilder<List<TrendingItem>>(
+                future: _trendingItemsFuture,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SizedBox(height: 20);
+                  }
+                  return _buildTrendingCarousel(snapshot.data!, isDark, l10n);
+                },
+              ),
+            ),
 
-                  // Latest Episodes Grid
-                  if (homeData.latestEpisodes.isNotEmpty)
+            // Content sections
+            FutureBuilder<HomeData>(
+              future: _homeDataFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SliverToBoxAdapter(
+                      child: _buildShimmerLoading(isDark));
+                }
+
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return SliverFillRemaining(child: _buildOfflineView(isDark));
+                }
+
+                final homeData = snapshot.data!;
+                return SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Continue Watching
                     FadeInWidget(
-                      delay: const Duration(milliseconds: 200),
-                      child: _buildAnimeGridSection(
-                        title: '🔥 ${l10n.latestEpisodes}',
-                        items: homeData.latestEpisodes.take(6).toList(),
-                        isDark: isDark,
-                        seeAllLabel: l10n.seeAll,
-                        onSeeAll: () => setState(() => _currentIndex = 1),
-                        itemBuilder: (item) => AnimeCard(
-                          title: item.anime.enTitle,
-                          subtitle: item.anime.jpTitle,
-                          imageUrl: item.anime.thumbnail,
-                          episodeBadge: 'EP ${item.episode.episodeNumber}',
-                          rating: double.tryParse(item.anime.rating),
-                          isCompact: true,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            '/anime-details',
-                            arguments: item.anime,
+                      delay: const Duration(milliseconds: 100),
+                      child: _buildContinueWatching(isDark, l10n),
+                    ),
+
+                    // Latest Episodes Grid
+                    if (homeData.latestEpisodes.isNotEmpty)
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 200),
+                        child: _buildAnimeGridSection(
+                          title: '🔥 ${l10n.latestEpisodes}',
+                          items: homeData.latestEpisodes.take(6).toList(),
+                          isDark: isDark,
+                          seeAllLabel: l10n.seeAll,
+                          onSeeAll: () => setState(() => _currentIndex = 1),
+                          itemBuilder: (item) => AnimeCard(
+                            title: item.anime.enTitle,
+                            subtitle: item.anime.jpTitle,
+                            imageUrl: item.anime.thumbnail,
+                            episodeBadge: 'EP ${item.episode.episodeNumber}',
+                            rating: double.tryParse(item.anime.rating),
+                            isCompact: true,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/anime-details',
+                              arguments: item.anime,
+                            ),
                           ),
                         ),
                       ),
+
+                    // AI Recommendations
+                    FutureBuilder<List<Anime>>(
+                      future: _recommendationsFuture,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return FadeInWidget(
+                          delay: const Duration(milliseconds: 300),
+                          child: _buildAnimeGridSection(
+                            title: '✨ Recommended For You',
+                            items: snapshot.data!.take(6).toList(),
+                            isDark: isDark,
+                            itemBuilder: (item) => AnimeCard(
+                              title: item.enTitle,
+                              imageUrl: item.thumbnail,
+                              isCompact: true,
+                              rating: double.tryParse(item.score),
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                '/anime-details',
+                                arguments: item,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
 
-                  // AI Recommendations
-                  FutureBuilder<List<Anime>>(
-                    future: _recommendationsFuture,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return FadeInWidget(
-                        delay: const Duration(milliseconds: 300),
+                    // Because You Watched
+                    FutureBuilder<List<BecauseYouWatched>>(
+                      future: _becauseYouWatchedFuture,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return FadeInWidget(
+                          delay: const Duration(milliseconds: 400),
+                          child: Column(
+                            children: snapshot.data!.map((group) {
+                              return _buildAnimeGridSection(
+                                title:
+                                    '💙 Because you watched ${group.watchedAnimeName}',
+                                items: group.recommendations
+                                    .take(3)
+                                    .map((m) => Anime.fromJson(m))
+                                    .toList(),
+                                isDark: isDark,
+                                itemBuilder: (item) => AnimeCard(
+                                  title: item.enTitle,
+                                  imageUrl: item.thumbnail,
+                                  isCompact: true,
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    '/anime-details',
+                                    arguments: item,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Broadcast Schedule
+                    if (homeData.broadcast.isNotEmpty)
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 500),
                         child: _buildAnimeGridSection(
-                          title: '✨ Recommended For You',
-                          items: snapshot.data!.take(6).toList(),
+                          title: '📅 ${l10n.broadcastSchedule}',
+                          items: homeData.broadcast.take(6).toList(),
                           isDark: isDark,
+                          seeAllLabel: l10n.seeAll,
                           itemBuilder: (item) => AnimeCard(
                             title: item.enTitle,
                             imageUrl: item.thumbnail,
                             isCompact: true,
-                            rating: double.tryParse(item.score),
                             onTap: () => Navigator.pushNamed(
                               context,
                               '/anime-details',
@@ -383,107 +452,48 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
 
-                  // Because You Watched
-                  FutureBuilder<List<BecauseYouWatched>>(
-                    future: _becauseYouWatchedFuture,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return const SizedBox.shrink();
-                      }
-                      return FadeInWidget(
-                        delay: const Duration(milliseconds: 400),
-                        child: Column(
-                          children: snapshot.data!.map((group) {
-                            return _buildAnimeGridSection(
-                              title:
-                                  '💙 Because you watched ${group.watchedAnimeName}',
-                              items: group.recommendations
-                                  .take(3)
-                                  .map((m) => Anime.fromJson(m))
-                                  .toList(),
-                              isDark: isDark,
-                              itemBuilder: (item) => AnimeCard(
-                                title: item.enTitle,
-                                imageUrl: item.thumbnail,
-                                isCompact: true,
-                                onTap: () => Navigator.pushNamed(
-                                  context,
-                                  '/anime-details',
-                                  arguments: item,
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                    // Latest News
+                    if (homeData.latestNews.isNotEmpty)
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 600),
+                        child: _buildNewsSection(
+                          homeData.latestNews,
+                          isDark,
+                          l10n,
                         ),
-                      );
-                    },
-                  ),
+                      ),
 
-                  // Broadcast Schedule
-                  if (homeData.broadcast.isNotEmpty)
-                    FadeInWidget(
-                      delay: const Duration(milliseconds: 500),
-                      child: _buildAnimeGridSection(
-                        title: '📅 ${l10n.broadcastSchedule}',
-                        items: homeData.broadcast.take(6).toList(),
-                        isDark: isDark,
-                        seeAllLabel: l10n.seeAll,
-                        itemBuilder: (item) => AnimeCard(
-                          title: item.enTitle,
-                          imageUrl: item.thumbnail,
-                          isCompact: true,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            '/anime-details',
-                            arguments: item,
+                    // Current Season
+                    if (homeData.premiere.isNotEmpty)
+                      FadeInWidget(
+                        delay: const Duration(milliseconds: 700),
+                        child: _buildAnimeGridSection(
+                          title: '🌸 ${l10n.currentSeason}',
+                          items: homeData.premiere.take(6).toList(),
+                          isDark: isDark,
+                          seeAllLabel: l10n.seeAll,
+                          itemBuilder: (item) => AnimeCard(
+                            title: item.enTitle,
+                            imageUrl: item.thumbnail,
+                            isCompact: true,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/anime-details',
+                              arguments: item,
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                  // Latest News
-                  if (homeData.latestNews.isNotEmpty)
-                    FadeInWidget(
-                      delay: const Duration(milliseconds: 600),
-                      child: _buildNewsSection(
-                        homeData.latestNews,
-                        isDark,
-                        l10n,
-                      ),
-                    ),
-
-                  // Current Season
-                  if (homeData.premiere.isNotEmpty)
-                    FadeInWidget(
-                      delay: const Duration(milliseconds: 700),
-                      child: _buildAnimeGridSection(
-                        title: '🌸 ${l10n.currentSeason}',
-                        items: homeData.premiere.take(6).toList(),
-                        isDark: isDark,
-                        seeAllLabel: l10n.seeAll,
-                        itemBuilder: (item) => AnimeCard(
-                          title: item.enTitle,
-                          imageUrl: item.thumbnail,
-                          isCompact: true,
-                          onTap: () => Navigator.pushNamed(
-                            context,
-                            '/anime-details',
-                            arguments: item,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 24),
-                ]),
-              );
-            },
-          ),
-        ],
+                    const SizedBox(height: 24),
+                  ]),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -512,15 +522,15 @@ class _HomeScreenState extends State<HomeScreen>
                 margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? category.color.withOpacity(0.1)
+                      ? category.color.withValues(alpha: 0.1)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
                         ? category.color
                         : (isDark
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.black.withOpacity(0.1)),
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.black.withValues(alpha: 0.1)),
                     width: 1.5,
                   ),
                 ),
@@ -572,8 +582,8 @@ class _HomeScreenState extends State<HomeScreen>
                       boxShadow: [
                         BoxShadow(
                           color: isSelected
-                              ? category.color.withOpacity(0.4)
-                              : Colors.black.withOpacity(0.05),
+                              ? category.color.withValues(alpha: 0.4)
+                              : Colors.black.withValues(alpha: 0.05),
                           blurRadius: isSelected ? 12 : 6,
                           offset: const Offset(0, 3),
                         ),
@@ -668,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen>
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                           spreadRadius: -5,
@@ -694,8 +704,8 @@ class _HomeScreenState extends State<HomeScreen>
                                 end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withOpacity(0.2),
-                                  Colors.black.withOpacity(0.95),
+                                  Colors.black.withValues(alpha: 0.2),
+                                  Colors.black.withValues(alpha: 0.95),
                                 ],
                                 stops: const [0.0, 0.4, 1.0],
                               ),
@@ -722,8 +732,8 @@ class _HomeScreenState extends State<HomeScreen>
                                       borderRadius: BorderRadius.circular(8),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary.withOpacity(
-                                            0.5,
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.5,
                                           ),
                                           blurRadius: 8,
                                         ),
@@ -756,14 +766,16 @@ class _HomeScreenState extends State<HomeScreen>
                                   children: [
                                     Icon(
                                       LucideIcons.playCircle,
-                                      color: Colors.white.withOpacity(0.7),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.7),
                                       size: 14,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
                                       "Watch Now",
                                       style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.7),
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -813,7 +825,7 @@ class _HomeScreenState extends State<HomeScreen>
                         end: Alignment.bottomCenter,
                         colors: [
                           AppColors.primary,
-                          AppColors.primary.withOpacity(0.5)
+                          AppColors.primary.withOpacity(0.5),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(2),
@@ -835,8 +847,10 @@ class _HomeScreenState extends State<HomeScreen>
                 GestureDetector(
                   onTap: onSeeAll,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),

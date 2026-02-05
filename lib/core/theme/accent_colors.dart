@@ -186,23 +186,23 @@ class AccentPreset {
 
   /// Get gradient from this preset
   LinearGradient get gradient => LinearGradient(
-    colors: [primary, secondary],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+        colors: [primary, secondary],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
 
   /// Get a shimmer gradient for loading states
   LinearGradient get shimmerGradient => LinearGradient(
-    colors: [
-      primary.withOpacity(0.3),
-      secondary.withOpacity(0.5),
-      primary.withOpacity(0.3),
-    ],
-    stops: const [0.0, 0.5, 1.0],
-  );
+        colors: [
+          primary.withValues(alpha: 0.3),
+          secondary.withValues(alpha: 0.5),
+          primary.withValues(alpha: 0.3),
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      );
 
   /// Get a glow color for shadows
-  Color get glowColor => primary.withOpacity(0.4);
+  Color get glowColor => primary.withValues(alpha: 0.4);
 
   /// Generate a color scheme from this preset
   ColorScheme toColorScheme({Brightness brightness = Brightness.dark}) {

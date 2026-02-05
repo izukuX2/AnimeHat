@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import '../models/anime_model.dart';
 import '../models/character_model.dart';
 import '../config/env.dart';
@@ -30,7 +31,7 @@ class AnimeifyApiClient {
 
       // Handle PHP notices/errors prefixed to JSON
       if (body.contains('<b>Notice</b>') || body.contains('<b>Warning</b>')) {
-        print(
+        debugPrint(
           'DEBUG: Server noise detected from $endpoint, attempting to clean...',
         );
         final startBrace = body.indexOf('{');
@@ -50,8 +51,8 @@ class AnimeifyApiClient {
       }
 
       if (body.startsWith('<')) {
-        print('DEBUG: HTML Error detected from $endpoint:');
-        print('DEBUG: Body snippet: ${body.take(200)}');
+        debugPrint('DEBUG: HTML Error detected from $endpoint:');
+        debugPrint('DEBUG: Body snippet: ${body.take(200)}');
         throw Exception(
           'Server returned HTML instead of JSON from $endpoint. '
           'This often happens due to PHP errors or 404s. '
@@ -61,10 +62,10 @@ class AnimeifyApiClient {
 
       return json.decode(body);
     } on FormatException catch (e) {
-      print('DEBUG: JSON Decode Error from $endpoint: $e');
+      debugPrint('DEBUG: JSON Decode Error from $endpoint: $e');
       throw Exception('Failed to decode JSON from $endpoint: $e');
     } catch (e) {
-      print('DEBUG: Error in _safeDecode for $endpoint: $e');
+      debugPrint('DEBUG: Error in _safeDecode for $endpoint: $e');
       rethrow;
     }
   }
@@ -76,11 +77,11 @@ class AnimeifyApiClient {
     try {
       return await call();
     } on http.ClientException catch (e) {
-      print('DEBUG: Network Client Error ($endpoint): $e');
+      debugPrint('DEBUG: Network Client Error ($endpoint): $e');
       throw Exception('Network error: Please check your internet connection.');
     } catch (e) {
       if (e.toString().contains('SocketException')) {
-        print('DEBUG: Connectivity Error ($endpoint): $e');
+        debugPrint('DEBUG: Connectivity Error ($endpoint): $e');
         throw Exception('No internet connection. Please try again later.');
       }
       rethrow;

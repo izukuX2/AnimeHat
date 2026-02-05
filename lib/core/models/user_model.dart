@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppUser {
   final String uid;
   final String email;
@@ -75,7 +77,7 @@ class AppUser {
         photoUrl: parsePhotoUrl(map),
       );
     } catch (e) {
-      print("CRITICAL ERROR parsing AppUser: $e");
+      debugPrint("CRITICAL ERROR parsing AppUser: $e");
       // Return a skeleton user to avoid app-wide crash
       return AppUser(
         uid: map['uid'] ?? 'error',

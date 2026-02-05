@@ -94,7 +94,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               )
                             : null,
                         color: index > _currentPage
-                            ? Colors.white.withOpacity(0.2)
+                            ? Colors.white.withValues(alpha: 0.2)
                             : null,
                       ),
                     ),
@@ -131,12 +131,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     onPressed: _currentPage == 0
                         ? () => _completeOnboarding()
                         : () => _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          ),
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            ),
                     child: Text(
                       _currentPage == 0 ? 'Skip' : 'Back',
-                      style: TextStyle(color: Colors.white.withOpacity(0.6)),
+                      style:
+                          TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                     ),
                   ),
 
@@ -145,9 +146,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     onPressed: _currentPage == 2
                         ? _completeOnboarding
                         : () => _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          ),
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       padding: const EdgeInsets.symmetric(
@@ -204,7 +205,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       borderRadius: BorderRadius.circular(35),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366F1).withOpacity(0.4),
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.4),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -243,7 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               'Your Ultimate Anime Companion',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
 
@@ -266,7 +267,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       feature.$2,
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                       ),
                     ),
                   ],
@@ -287,7 +288,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         child: Column(
           children: [
             const SizedBox(height: 24),
-
             const Text(
               '🎯 Pick Your Favorites',
               style: TextStyle(
@@ -296,20 +296,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 color: Colors.white,
               ),
             ),
-
             const SizedBox(height: 12),
-
             Text(
               'Select genres you love to get personalized recommendations',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
               ),
               textAlign: TextAlign.center,
             ),
-
             const SizedBox(height: 32),
-
             Expanded(
               child: Wrap(
                 spacing: 10,
@@ -341,21 +337,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             : null,
                         color: isSelected
                             ? null
-                            : Colors.white.withOpacity(0.1),
+                            : Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
                           color: isSelected
                               ? Colors.transparent
-                              : Colors.white.withOpacity(0.2),
+                              : Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Text(
                         genre,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(isSelected ? 1 : 0.7),
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          color: Colors.white
+                              .withValues(alpha: isSelected ? 1 : 0.7),
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -363,10 +359,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 }).toList(),
               ),
             ),
-
             Text(
               '${_selectedGenres.length} selected',
-              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
             ),
           ],
         ),
@@ -412,7 +407,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               'Welcome to the AnimeHat community.\nLet\'s start your anime journey!',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -424,9 +419,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -462,7 +457,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+          style: TextStyle(
+              fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
         ),
       ],
     );

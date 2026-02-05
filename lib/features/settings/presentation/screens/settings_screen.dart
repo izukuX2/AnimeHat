@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -15,8 +16,8 @@ import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/backup_service.dart';
 import '../../../home/data/home_repository.dart';
 import '../../../../core/api/animeify_api_client.dart';
+import 'updates_screen.dart';
 import '../../../../core/services/update_service.dart';
-import '../../../../core/widgets/update_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   final Locale currentLocale;
@@ -152,17 +153,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                AccentColors.getByName(
+                            color: AccentColors.getByName(
                                   widget.currentAccentName!,
-                                )?.primary.withOpacity(0.1) ??
+                                )?.primary.withValues(alpha: 0.1) ??
                                 Colors.transparent,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color:
-                                  AccentColors.getByName(
+                              color: AccentColors.getByName(
                                     widget.currentAccentName!,
-                                  )?.primary.withOpacity(0.3) ??
+                                  )?.primary.withValues(alpha: 0.3) ??
                                   Colors.transparent,
                             ),
                           ),
@@ -297,13 +296,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             return ChoiceChip(
                               label: Text(speed.label),
                               selected: isSelected,
-                              selectedColor: AppColors.primary.withOpacity(0.2),
+                              selectedColor:
+                                  AppColors.primary.withValues(alpha: 0.2),
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.primary
                                     : (isDark
-                                          ? Colors.white70
-                                          : Colors.black87),
+                                        ? Colors.white70
+                                        : Colors.black87),
                               ),
                               onSelected: (selected) {
                                 if (selected) {
@@ -399,12 +399,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         const SnackBar(content: Text('Syncing profile...')),
                       );
                       try {
-                        print("DEBUG: Starting Sync for ${user.uid}");
+                        debugPrint("DEBUG: Starting Sync for ${user.uid}");
                         await UserRepository().getUser(
                           user.uid,
                           forceRefresh: true,
                         );
-                        print("DEBUG: Sync Success for ${user.uid}");
+                        debugPrint("DEBUG: Sync Success for ${user.uid}");
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).clearSnackBars();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -418,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }
                       } catch (e) {
-                        print("DEBUG: Sync Failed: $e");
+                        debugPrint("DEBUG: Sync Failed: $e");
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).clearSnackBars();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -555,35 +555,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: const TextStyle(fontSize: 12),
               ),
               onTap: () async {
+                final updateService = UpdateService();
+
+                // Show loading indicator
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Checking for updates...')),
+                  SnackBar(
+                      content: Text(l10n.checkingForUpdates ??
+                          'Checking for updates...')),
                 );
+
                 try {
-                  final updateService = UpdateService();
-                  final releaseData = await updateService.checkUpdate();
-                  if (mounted) {
+                  final release = await updateService.checkUpdate();
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    if (releaseData != null) {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: true,
-                        builder: (context) =>
-                            UpdateDialog(releaseData: releaseData),
+
+                    if (release != null) {
+                      // Update available
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const UpdatesScreen()),
                       );
                     } else {
+                      // Up to date
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('App is up to date!'),
+                        SnackBar(
+                          content: Text(l10n.appUpToDate ??
+                              'You have the latest version!'),
                           backgroundColor: Colors.green,
                         ),
                       );
                     }
                   }
                 } catch (e) {
-                  if (mounted) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: $e'),
+                        content: Text('Error checking updates: $e'),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -642,14 +651,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final isNameAdmin = appUser?.displayName.toLowerCase() == 'admin';
       final isAdminFlag = appUser?.isAdmin ?? false;
 
-      print('DEBUG: Admin Check for ${appUser?.displayName}');
-      print('DEBUG: isAdmin flag: $isAdminFlag (Source: Server Refresh)');
-      print('DEBUG: isNameAdmin: $isNameAdmin');
+      debugPrint('DEBUG: Admin Check for ${appUser?.displayName}');
+      debugPrint('DEBUG: isAdmin flag: $isAdminFlag (Source: Server Refresh)');
+      debugPrint('DEBUG: isNameAdmin: $isNameAdmin');
 
       // Allow access if EITHER the flag is true OR the name is admin
       return isAdminFlag || isNameAdmin;
     } catch (e) {
-      print('Error checking admin status: $e');
+      debugPrint('Error checking admin status: $e');
       return false;
     }
   }
@@ -670,7 +679,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.5) : AppColors.border,
+            color:
+                isDark ? Colors.black.withValues(alpha: 0.5) : AppColors.border,
             offset: const Offset(4, 4),
             blurRadius: 0,
           ),
@@ -849,7 +859,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 10,
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundColor:
+                            AppColors.primary.withValues(alpha: 0.1),
                         valueColor: const AlwaysStoppedAnimation(
                           AppColors.primary,
                         ),
@@ -926,7 +937,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (backupPath != null) {
       final backupService = BackupService();
       await backupService.exportDatabase(backupPath);
-      print('Auto-backup completed to $backupPath');
+      debugPrint('Auto-backup completed to $backupPath');
     }
   }
 }

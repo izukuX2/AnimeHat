@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"animeraw-86862","appId":"1:967521357454:android:da44735fd3f099481e43df","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"animeraw-86862","configurations":{"android":"1:967521357454:android:da44735fd3f099481e43df","ios":"1:967521357454:ios:eb9b6c0e96760b221e43df","macos":"1:967521357454:ios:b48475ccb2177b4d1e43df","web":"1:967521357454:web:a71fbbf58182028d1e43df","windows":"1:967521357454:web:5b3e2991018ecd681e43df"}}}}}}
+{
+    "functions": [
+        {
+            "source": "functions",
+            "codebase": "default",
+            "ignore": [
+                "node_modules",
+                ".git",
+                "firebase-debug.log",
+                "firebase-debug.*.log"
+            ]
+        }
+    ],
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "animeraw-86862",
+                    "appId": "1:967521357454:android:da44735fd3f099481e43df",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "animeraw-86862",
+                    "configurations": {
+                        "android": "1:967521357454:android:da44735fd3f099481e43df",
+                        "ios": "1:967521357454:ios:eb9b6c0e96760b221e43df",
+                        "macos": "1:967521357454:ios:b48475ccb2177b4d1e43df",
+                        "web": "1:967521357454:web:a71fbbf58182028d1e43df",
+                        "windows": "1:967521357454:web:5b3e2991018ecd681e43df"
+                    }
+                }
+            }
+        }
+    }
+}

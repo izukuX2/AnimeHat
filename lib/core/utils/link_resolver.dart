@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 
@@ -46,7 +47,7 @@ class LinkResolver {
 
       return url;
     } catch (e) {
-      print('Error resolving MediaFire link: $e');
+      debugPrint('Error resolving MediaFire link: $e');
       return url;
     }
   }

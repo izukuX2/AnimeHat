@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/api/animeify_api_client.dart';
 import '../../../../core/models/anime_model.dart';
 
@@ -39,30 +40,29 @@ class ScheduleRepository {
             premiere: '',
           );
 
-          final List? list =
-              data['Schedule'] ??
+          final List? list = data['Schedule'] ??
               data['AnimeList'] ??
               data['Broadcast'] ??
               data['Anime'];
           if (list != null) {
             schedule[day] = list.map((item) => Anime.fromJson(item)).toList();
-            print(
+            debugPrint(
               'DEBUG: App Schedule for $day returned ${schedule[day]!.length} items',
             );
           } else {
-            print(
+            debugPrint(
               'DEBUG: App Schedule for $day - no list found in keys: ${data.keys.toList()}',
             );
           }
         } catch (e) {
-          print('DEBUG: Error fetching App schedule for $day: $e');
+          debugPrint('DEBUG: Error fetching App schedule for $day: $e');
         }
         // Small delay to be safe, though our own API usually has higher limits
         await Future.delayed(const Duration(milliseconds: 200));
       }
       return schedule;
     } catch (e) {
-      print('DEBUG: ScheduleRepository Overall Error: $e');
+      debugPrint('DEBUG: ScheduleRepository Overall Error: $e');
       return schedule;
     }
   }
