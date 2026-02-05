@@ -28,11 +28,13 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Generate Env File
+      - name: Decode Secrets
+        env:
+          FIREBASE_OPTIONS_BASE64: ${{ secrets.FIREBASE_OPTIONS_BASE64 }}
+          ENV_DART_BASE64: ${{ secrets.ENV_DART_BASE64 }}
         run: |
-          if [ -f lib/core/config/env.example.dart ]; then
-            cp lib/core/config/env.example.dart lib/core/config/env.dart
-          fi
+          echo "$FIREBASE_OPTIONS_BASE64" | base64 -d > lib/firebase_options.dart
+          echo "$ENV_DART_BASE64" | base64 -d > lib/core/config/env.dart
 
       - name: Decode Google Services JSON
         env:
