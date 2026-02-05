@@ -2,16 +2,13 @@ name: Build & Release APK
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    outputs:
-      version_tag: ${{ steps.get_version.outputs.tag }}
-      tag_exists: ${{ steps.check_tag.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
 
@@ -42,31 +39,10 @@ jobs:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
 
-      - name: Get Version from pubspec.yaml
-        id: get_version
-        run: |
-          VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if Tag exists
-        id: check_tag
-        run: |
-          git fetch --tags
-          TAG=${{ steps.get_version.outputs.tag }}
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG already exists. Skipping release."
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build APK
-        if: steps.check_tag.outputs.exists == 'false'
         run: flutter build apk --release
 
       - name: Upload APK
-        if: steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
@@ -75,7 +51,6 @@ jobs:
   release:
     name: Create GitHub Release
     needs: build
-    if: needs.build.outputs.tag_exists == 'false'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -88,8 +63,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ needs.build.outputs.version_tag }}
-          name: Release ${{ needs.build.outputs.version_tag }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           files: app-release.apk
           generate_release_notes: true
         env:
