@@ -103,33 +103,36 @@ elif [ "$BUMP" == "minor" ]; then
     NEW_MINOR=$((MINOR + 1))
     NEW_PATCH=0
 elif [ "$BUMP" == "patch" ]; then
-    if [ "$CHANNEL" == "stable" ] && [ -z "$TAG_PART" ]; then
-        # Standard patch bump
+    if [ -z "$TAG_PART" ]; then
+        # Currently on stable, bump patch
         NEW_PATCH=$((PATCH + 1))
-    elif [ "$CHANNEL" != "stable" ] && [ "$CHANNEL" == "$TAG_NAME" ]; then
-        # Just incrementing the existing pre-release tag
+    elif [ "$CHANNEL" == "$TAG_NAME" ]; then
+        # Already on same pre-release channel, bump tag number
         NEW_TAG_NUM=$((TAG_NUM + 1))
-        NEW_TAG_NAME=$CHANNEL
+        # Keep same semver base unless user manually asked for more (handled by major/minor)
+    else
+        # Switching pre-release channels or from pre-release to stable
+        # For pre-release to stable, we keep the semver base (e.g. 4.0.4-beta.2 -> 4.0.4)
+        # For channel switch (alpha -> beta), we keep semver base and reset tag num
+        NEW_TAG_NUM=1
     fi
-    # If switching channels or going to stable, patch logic is handled below
 fi
 
 # 4. Channel Transition Logic
 if [ "$CHANNEL" == "stable" ]; then
-    # Stripping any tags
     NEW_TAG_NAME=""
 else
-    # We are in or moving to alpha/beta
     NEW_TAG_NAME=$CHANNEL
-    if [ "$CHANNEL" != "$TAG_NAME" ]; then
-        # Switching channel (e.g. stable->beta or alpha->beta)
+    if [ "$NEW_TAG_NAME" != "$TAG_NAME" ]; then
+        # Reset tag number on channel change or start
         NEW_TAG_NUM=1
-    elif [ "$BUMP" == "none" ] && [ -z "$TAG_PART" ]; then
-         # Moving from stable to a tag without bumping semver
-         NEW_TAG_NUM=1
-    elif [ -z "$NEW_TAG_NUM" ] || [ "$NEW_TAG_NUM" -eq 0 ]; then
-         # Fallback increment if we didn't handle it above
-         NEW_TAG_NUM=$((TAG_NUM + 1))
+    elif [ "$TAG_NUM" -eq 0 ] && [ "$BUMP" == "none" ]; then
+        # Starting pre-release from stable without a bump (e.g. 4.0.3 -> 4.0.3-beta.1)
+        # Note: Usually you want 4.0.4-beta.1, but this allows for manual control
+        NEW_TAG_NUM=1
+    elif [ "$NEW_TAG_NUM" -eq 0 ]; then
+        # Automatic increment if not already set by bump logic
+        NEW_TAG_NUM=$((TAG_NUM + 1))
     fi
 fi
 
@@ -199,13 +202,31 @@ fi
 # 8. Website Update (Optional)
 WEBSITE_DIR="/home/izukux2/Development/website"
 if [ -d "$WEBSITE_DIR" ]; then
+    # Check for potential typo in remote
+    cd "$WEBSITE_DIR"
+    REMOTE_URL=$(git remote get-url origin 2>/dev/null)
+    if [[ "$REMOTE_URL" == *"Wepsite"* ]]; then
+        echo -e "\n${YELLOW}⚠️  Warning: Website remote URL contains 'Wepsite' (typo?).${NC}"
+        echo -e "   Current: $REMOTE_URL"
+        echo -n "   Fix to 'Website'? [y/N]: "
+        read -n 1 FIX_REMOTE
+        echo ""
+        if [[ "$FIX_REMOTE" =~ ^[Yy]$ ]]; then
+            NEW_REMOTE=$(echo "$REMOTE_URL" | sed 's/Wepsite/Website/g')
+            git remote set-url origin "$NEW_REMOTE"
+            echo -e "${GREEN}✅ Remote updated to: $NEW_REMOTE${NC}"
+        fi
+    fi
+    cd - > /dev/null
+
     echo -e "\n${CYAN}🌐 Detected Website Directory. Trigger website rebuild? [y/N]: ${NC}"
     read -n 1 UPDATE_WEBSITE
     echo ""
     if [[ "$UPDATE_WEBSITE" =~ ^[Yy]$ ]]; then
         echo -e "${CYAN}🔄 Triggering website rebuild...${NC}"
-        cd "$WEBSITE_DIR/website" || cd "$WEBSITE_DIR"
-        git commit --allow-empty -m "Trigger rebuild for AnimeHat v$FINAL_VERSION"
+        # Go to where .git is
+        cd "$WEBSITE_DIR"
+        git commit --allow-empty -m "build: trigger rebuild for AnimeHat v$FINAL_VERSION"
         git push origin main
         cd - > /dev/null
         echo -e "${GREEN}✅ Website rebuild triggered!${NC}"
