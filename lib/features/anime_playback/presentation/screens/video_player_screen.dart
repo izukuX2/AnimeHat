@@ -15,9 +15,9 @@ import '../../../../core/models/user_model.dart';
 import '../../../auth/data/auth_repository.dart';
 import '../../../../core/utils/link_resolver.dart';
 import '../../../anime_details/data/anime_repository.dart';
-import '../../../../core/api/animeify_api_client.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/services/share_service.dart';
+import '../../../../core/services/extension_service.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoUrl;
@@ -84,12 +84,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   final UserRepository _userRepository = UserRepository();
   final AuthRepository _auth = AuthRepository();
   final AnimeRepository _animeRepository = AnimeRepository(
-    apiClient: AnimeifyApiClient(),
+    extensionService: ExtensionService(),
   );
 
   // Gestures & Animations
   AnimationController?
-  _centerPlayBtnController; // Scale animation for play/pause
+      _centerPlayBtnController; // Scale animation for play/pause
   bool _showDoubleTapAnim = false;
   bool _isLeftTap = false; // true = left (rewind), false = right (forward)
   Timer? _doubleTapResetTimer;
@@ -320,9 +320,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         widget.anime.animeId,
         newEp.episodeNumber,
       );
-      final mediaFireServers = servers
-          .where((s) => s.url.contains('mediafire.com'))
-          .toList();
+      final mediaFireServers =
+          servers.where((s) => s.url.contains('mediafire.com')).toList();
 
       if (mediaFireServers.isEmpty) throw Exception("No servers found");
 
@@ -482,8 +481,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       // Lock to current orientation
       SystemChrome.setPreferredOrientations([
         MediaQuery.of(context).orientation == Orientation.landscape
-            ? DeviceOrientation
-                  .landscapeLeft // Approximate
+            ? DeviceOrientation.landscapeLeft // Approximate
             : DeviceOrientation.portraitUp,
       ]);
     } else {
@@ -542,18 +540,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             child: _hasError
                 ? _buildError()
                 : _isLoading
-                ? _buildBufferingIndicator()
-                : InteractiveViewer(
-                    maxScale: 4.0,
-                    child: FittedBox(
-                      fit: _videoFit,
-                      child: SizedBox(
-                        width: _videoPlayerController!.value.size.width,
-                        height: _videoPlayerController!.value.size.height,
-                        child: VideoPlayer(_videoPlayerController!),
+                    ? _buildBufferingIndicator()
+                    : InteractiveViewer(
+                        maxScale: 4.0,
+                        child: FittedBox(
+                          fit: _videoFit,
+                          child: SizedBox(
+                            width: _videoPlayerController!.value.size.width,
+                            height: _videoPlayerController!.value.size.height,
+                            child: VideoPlayer(_videoPlayerController!),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
           ),
 
           // 2. Gesture Detector for Netflix-style controls
@@ -628,7 +626,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                 child: _buildNetflixOverlay(),
               ),
             ),
-
             if (_showSettings) _buildSettingsSheet(),
             if (_showEpisodeList) _buildEpisodeList(),
           ],
@@ -749,7 +746,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                       Text(
                         "${l10n.selectQuality}: ${_parseQuality(_currentServers.firstWhere(
                           (s) => s.name == _activeServerName,
-                          orElse: () => StreamingServer(name: _activeServerName, url: ""),
+                          orElse: () =>
+                              StreamingServer(name: _activeServerName, url: ""),
                         ))} • ${l10n.epShort} ${_currentEpisode.episodeNumber}",
                         style: const TextStyle(
                           color: Colors.grey,
@@ -1132,8 +1130,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
 
     // 3. Fallbacks (Keywords)
     if (name.toLowerCase().contains('fullhd') ||
-        name.toLowerCase().contains('fhd'))
-      return '1080p';
+        name.toLowerCase().contains('fhd')) return '1080p';
     if (name.toLowerCase().contains('hd')) return '720p';
     if (name.toLowerCase().contains('sd')) return '480p';
 
@@ -1426,9 +1423,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                       ),
                     ),
                     onTap: () => _switchEpisodeInPlace(ep),
-                    tileColor: isCur
-                        ? Colors.blueAccent.withOpacity(0.1)
-                        : null,
+                    tileColor:
+                        isCur ? Colors.blueAccent.withOpacity(0.1) : null,
                   );
                 },
               ),
@@ -1444,11 +1440,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 
   Widget _buildError() => Center(
-    child: Text(
-      _errorMessage ?? "Error",
-      style: const TextStyle(color: Colors.red),
-    ),
-  );
+        child: Text(
+          _errorMessage ?? "Error",
+          style: const TextStyle(color: Colors.red),
+        ),
+      );
 }
 
 class ProgressBar extends StatelessWidget {

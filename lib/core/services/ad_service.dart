@@ -1,16 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:unity_ads_plugin/unity_ads_plugin.dart';
-import 'package:flutter/foundation.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AdService {
+  // Global RouteObserver for ads
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   // Unity Ads IDs
   static const String gameId = '6037307';
   static const String bannerPlacementId = 'izuku';
   static const String interstitialPlacementId = 'izuku1';
   static const String rewardedPlacementId = 'izuku2';
 
-  static bool _adsEnabled = false; // Disabled by default
+  static bool _adsEnabled = true; // Enabled by default
   static bool get adsEnabled => _adsEnabled;
 
   /// Initialize the Unity Ads SDK.
@@ -18,7 +21,7 @@ class AdService {
     try {
       // Load user preference
       final prefs = await SharedPreferences.getInstance();
-      _adsEnabled = prefs.getBool('ads_enabled') ?? false; // Default to false
+      _adsEnabled = prefs.getBool('ads_enabled') ?? true; // Default to true
       debugPrint('DEBUG: Local Ads Preference: $_adsEnabled');
 
       await UnityAds.init(

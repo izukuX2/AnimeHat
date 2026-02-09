@@ -35,6 +35,9 @@ import 'core/widgets/error_boundary.dart';
 import 'core/theme/accent_colors.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/extension_service.dart';
+import 'features/extensions/presentation/screens/extension_manager_screen.dart';
+import 'core/models/extension_model.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -199,122 +202,128 @@ class _AnimeHatAppState extends State<AnimeHatApp> {
   @override
   Widget build(BuildContext context) {
     return ErrorBoundary(
-      child: MaterialApp(
-        navigatorKey: NotificationService().navigatorKey,
-        debugShowCheckedModeBanner: false,
-        locale: _locale,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en'), Locale('ar'), Locale('fr')],
-        // Use the selected theme for both light and dark slots
-        // The theme's internal brightness will handle the actual look
-        // We force ThemeMode.light so that our custom theme (which might be dark)
-        // is used as the 'current' theme without system interference overriding it
-        themeMode: ThemeMode.light,
-        theme: ThemeManager.instance.buildTheme(
-          _themeType,
-          locale: _locale,
-          accentOverride: AccentColors.getByName(_accentColorName ?? ''),
-        ),
-        // darkTheme is technically not needed if we force ThemeMode.light,
-        // but providing it doesn't hurt.
-        darkTheme: ThemeManager.instance.buildTheme(
-          _themeType,
-          locale: _locale,
-          accentOverride: AccentColors.getByName(_accentColorName ?? ''),
-        ),
-        initialRoute: '/',
-        onGenerateRoute: (settings) {
-          if (settings.name == '/anime-details') {
-            final anime = settings.arguments as Anime;
-            return MaterialPageRoute(
-              builder: (context) => AnimeDetailsScreen(anime: anime),
-            );
-          }
-          if (settings.name == '/episodes') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => EpisodesListScreen(
-                anime: args['anime'] as Anime,
-                episodes: args['episodes'] as List<Episode>,
-              ),
-            );
-          }
-          if (settings.name == '/episode-player') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => EpisodePlayerScreen(
-                anime: args['anime'] as Anime,
-                episode: args['episode'] as Episode,
-                startAtMs: args['startAtMs'] as int? ?? 0,
-                episodes: args['episodes'] as List<Episode>,
-              ),
-            );
-          }
-          return null;
-        },
-        routes: {
-          '/': (context) {
-            // Show loading while initializing
-            if (!_isInitialized) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            // Show onboarding for new users
-            if (_showOnboarding) {
-              return OnboardingScreen(
-                onComplete: () {
-                  setState(() => _showOnboarding = false);
-                },
-              );
-            }
-
-            // Normal auth flow
-            return StreamBuilder<User?>(
-              stream: _authRepository.authStateChanges,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+      child: ListenableBuilder(
+        listenable: ExtensionService(),
+        builder: (context, _) {
+          final activeMod = ExtensionService().activeMod;
+          return MaterialApp(
+            navigatorKey: NotificationService().navigatorKey,
+            navigatorObservers: [AdService.routeObserver],
+            debugShowCheckedModeBanner: false,
+            locale: _locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en'), Locale('ar'), Locale('fr')],
+            themeMode: ThemeMode.light,
+            theme: ThemeManager.instance.buildTheme(
+              _themeType,
+              locale: _locale,
+              accentOverride: AccentColors.getByName(_accentColorName ?? ''),
+              modData: activeMod?.modData,
+            ),
+            darkTheme: ThemeManager.instance.buildTheme(
+              _themeType,
+              locale: _locale,
+              accentOverride: AccentColors.getByName(_accentColorName ?? ''),
+              modData: activeMod?.modData,
+            ),
+            initialRoute: '/',
+            onGenerateRoute: (settings) {
+              if (settings.name == '/anime-details') {
+                final anime = settings.arguments as Anime;
+                return MaterialPageRoute(
+                  builder: (context) => AnimeDetailsScreen(anime: anime),
+                );
+              }
+              if (settings.name == '/episodes') {
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (context) => EpisodesListScreen(
+                    anime: args['anime'] as Anime,
+                    episodes: args['episodes'] as List<Episode>,
+                  ),
+                );
+              }
+              if (settings.name == '/episode-player') {
+                final args = settings.arguments as Map<String, dynamic>;
+                return MaterialPageRoute(
+                  builder: (context) => EpisodePlayerScreen(
+                    anime: args['anime'] as Anime,
+                    episode: args['episode'] as Episode,
+                    startAtMs: args['startAtMs'] as int? ?? 0,
+                    episodes: args['episodes'] as List<Episode>,
+                  ),
+                );
+              }
+              return null;
+            },
+            routes: {
+              '/': (context) {
+                // Show loading while initializing
+                if (!_isInitialized) {
                   return const Scaffold(
                     body: Center(child: CircularProgressIndicator()),
                   );
                 }
-                if (snapshot.hasData) {
-                  return ForceUpdateWrapper(
-                    currentVersion: _currentVersion,
-                    child: const HomeScreen(),
+
+                // Show onboarding for new users
+                if (_showOnboarding) {
+                  return OnboardingScreen(
+                    onComplete: () {
+                      setState(() => _showOnboarding = false);
+                    },
                   );
                 }
-                return const LoginScreen();
+
+                // Normal auth flow
+                return StreamBuilder<User?>(
+                  stream: _authRepository.authStateChanges,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (snapshot.hasData) {
+                      return ForceUpdateWrapper(
+                        currentVersion: _currentVersion,
+                        child: const HomeScreen(),
+                      );
+                    }
+                    return const LoginScreen();
+                  },
+                );
               },
-            );
-          },
-          '/login': (context) => const LoginScreen(),
-          '/signup': (context) => const SignupScreen(),
-          '/profile': (context) {
-            final uid = ModalRoute.of(context)?.settings.arguments as String?;
-            final effectiveUid = uid ?? FirebaseAuth.instance.currentUser?.uid;
-            if (effectiveUid == null) return const LoginScreen();
-            return ProfileScreen(uid: effectiveUid);
-          },
-          '/settings': (context) => SettingsScreen(
-            currentLocale: _locale,
-            onLocaleChange: _setLocale,
-            currentTheme: _themeType,
-            onThemeChange: _setThemeType,
-            currentAccentName: _accentColorName,
-            onAccentChange: _setAccentColor,
-            syncSettings: _syncSettings,
-            onSyncSettingsChange: _setSyncSettings,
-          ),
-          '/admin': (context) => const AdminDashboardScreen(),
-          '/schedule': (context) => const ScheduleScreen(),
-          '/notifications': (context) => const NotificationsScreen(),
+              '/login': (context) => const LoginScreen(),
+              '/signup': (context) => const SignupScreen(),
+              '/profile': (context) {
+                final uid =
+                    ModalRoute.of(context)?.settings.arguments as String?;
+                final effectiveUid =
+                    uid ?? FirebaseAuth.instance.currentUser?.uid;
+                if (effectiveUid == null) return const LoginScreen();
+                return ProfileScreen(uid: effectiveUid);
+              },
+              '/settings': (context) => SettingsScreen(
+                    currentLocale: _locale,
+                    onLocaleChange: _setLocale,
+                    currentTheme: _themeType,
+                    onThemeChange: _setThemeType,
+                    currentAccentName: _accentColorName,
+                    onAccentChange: _setAccentColor,
+                    syncSettings: _syncSettings,
+                    onSyncSettingsChange: _setSyncSettings,
+                  ),
+              '/admin': (context) => const AdminDashboardScreen(),
+              '/schedule': (context) => const ScheduleScreen(),
+              '/notifications': (context) => const NotificationsScreen(),
+              '/extensions': (context) => const ExtensionManagerScreen(),
+            },
+          );
         },
       ),
     );

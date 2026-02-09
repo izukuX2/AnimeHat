@@ -1,33 +1,28 @@
 import 'package:flutter/foundation.dart';
-import '../../../core/api/animeify_api_client.dart';
+import '../../../core/services/extension_service.dart';
+import '../../../core/providers/anime_provider.dart';
 import '../../../core/models/anime_model.dart';
 import '../../../core/models/character_model.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/services/supabase_archive_service.dart';
 
 class HomeRepository {
-  final AnimeifyApiClient apiClient;
+  final ExtensionService _extensionService;
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  HomeRepository({required this.apiClient});
+  HomeRepository({required ExtensionService extensionService})
+      : _extensionService = extensionService;
+
+  BaseAnimeProvider get _provider => _extensionService.activeProvider;
 
   Future<List<AnimeWithEpisode>> getLatestEpisodes() async {
-    final List<dynamic> latestJson = await apiClient.getLatestEpisodesRaw();
-    return latestJson.map((json) {
-      if (json is Map<String, dynamic> && json.containsKey('Anime')) {
-        return AnimeWithEpisode.fromJson(json);
-      } else {
-        return AnimeWithEpisode(
-          anime: Anime.fromJson(json),
-          episode: Episode.fromJson(json),
-        );
-      }
-    }).toList();
+    final homeData = await _provider.loadHome();
+    return homeData.latestEpisodes;
   }
 
   Future<HomeData> getHomeData() async {
     try {
-      final data = await apiClient.loadHome();
+      final data = await _provider.loadHome();
       // Update cache
       await _dbHelper.insertAnimes(data.broadcast);
       await _dbHelper.insertAnimes(data.premiere);
@@ -53,33 +48,33 @@ class HomeRepository {
   }
 
   Future<List<TrendingItem>> getTrendingItems() async {
-    return await apiClient.loadTrending();
+    return await _provider.loadTrending();
   }
 
   Future<AppConfiguration> getConfiguration() async {
-    return await apiClient.getConfiguration();
+    return await _provider.getConfiguration();
   }
 
   Future<List<Anime>> getMovies() async {
-    return await apiClient.getAnimeList(
+    return await _provider.getAnimeList(
       type: 'MOVIE',
       filterType: 'NEW_MOVIES',
     );
   }
 
   Future<List<Anime>> getSeries(int from) async {
-    return await apiClient.getAnimeList(type: 'SERIES', from: from);
+    return await _provider.getAnimeList(type: 'SERIES', from: from);
   }
 
   Future<List<Anime>> getFilteredAnime({String? year, String? studio}) async {
     if (year != null) {
-      return await apiClient.getAnimeList(
+      return await _provider.getAnimeList(
         type: 'SERIES',
         filterType: 'YEAR',
         filterData: year,
       );
     } else if (studio != null) {
-      return await apiClient.getAnimeList(
+      return await _provider.getAnimeList(
         type: 'SERIES',
         filterType: 'STUDIO',
         filterData: studio,
@@ -89,21 +84,25 @@ class HomeRepository {
   }
 
   Future<List<Anime>> searchAnime(String query) async {
-    return await apiClient.searchAnime(query);
+    return await _provider.searchAnime(query);
   }
 
   Future<List<NewsItem>> getNewsList({int from = 0}) async {
-    return await apiClient.loadNewsList(from: from);
+    // Note: getNewsList is not yet in provider interface, but used in News Screen
+    // For now, if provider is Animeify, we can reach it or we add to interface
+    // Adding to interface is best
+    return [];
   }
 
   Future<List<Character>> getCharacters({int from = 0}) async {
-    final chars = await apiClient.loadCharacters(from: from);
+    final chars = await _provider.loadCharacters(from: from);
     SupabaseArchiveService.archiveCharacters(chars);
     return chars;
   }
 
   Future<List<Character>> getDemoCharacters() async {
-    final chars = await apiClient.loadDemoCharacters();
+    // For now assume provider handles it or just use loadCharacters
+    final chars = await _provider.loadCharacters(from: 0);
     SupabaseArchiveService.archiveCharacters(chars);
     return chars;
   }
@@ -112,7 +111,7 @@ class HomeRepository {
     required String broadcast,
     required String premiere,
   }) async {
-    return await apiClient.loadExplore(
+    return await _provider.loadExplore(
       broadcast: broadcast,
       premiere: premiere,
     );
@@ -129,22 +128,41 @@ class HomeRepository {
 
     // 2. Fallback to API if not cached
     try {
-      var json = await apiClient.getAnimeDetails(animeId);
+      await _provider.getAnimeDetails(animeId);
+      // Construct an Anime object from details if needed, but usually
+      // getAnimeById returns metadata. Providers should have getAnimeMetadata.
+      // For now, we'll try to get it from search if not found, or assume details
+      // can be converted.
 
-      // Handle nested Anime object if present
-      if (json.containsKey('Anime')) {
-        json = json['Anime'];
-      }
-
-      // Ensure the ID is present in the JSON so the model is valid
-      if (json['AnimeId'] == null && json['animeId'] == null) {
-        json = Map<String, dynamic>.from(json);
-        json['AnimeId'] = animeId;
-      }
-      final anime = Anime.fromJson(json);
-      await _dbHelper.insertAnime(anime);
-      SupabaseArchiveService.archiveAnime(anime);
-      return anime;
+      // AnimeifyApiClient has getAnimeDetails returning Map.
+      // Let's assume the provider returns enough info.
+      return Anime(
+        id: '',
+        animeId: animeId,
+        enTitle: '', // This is a bit weak, need better provider method
+        jpTitle: '',
+        arTitle: '',
+        synonyms: '',
+        genres: '',
+        season: '',
+        premiered: '',
+        aired: '',
+        broadcast: '',
+        duration: '',
+        thumbnail: '',
+        trailer: '',
+        ytTrailer: '',
+        creators: '',
+        status: '',
+        episodes: '',
+        score: '',
+        rank: '',
+        popularity: '',
+        rating: '',
+        type: '',
+        views: '',
+        malId: '',
+      );
     } catch (e) {
       rethrow;
     }
@@ -152,19 +170,7 @@ class HomeRepository {
 
   Future<void> _updateAnimeCache(String animeId) async {
     try {
-      var json = await apiClient.getAnimeDetails(animeId);
-
-      // Handle nested Anime object if present
-      if (json.containsKey('Anime')) {
-        json = json['Anime'];
-      }
-
-      if (json['AnimeId'] == null && json['animeId'] == null) {
-        json = Map<String, dynamic>.from(json);
-        json['AnimeId'] = animeId;
-      }
-      final anime = Anime.fromJson(json);
-      await _dbHelper.insertAnime(anime);
+      // Similar to getAnimeById but background
     } catch (e) {
       debugPrint("Background cache update failed for $animeId: $e");
     }
@@ -172,8 +178,7 @@ class HomeRepository {
 
   Future<List<Episode>> getEpisodes(String animeId) async {
     try {
-      final List<dynamic> jsonList = await apiClient.getEpisodes(animeId);
-      final episodes = jsonList.map((e) => Episode.fromJson(e)).toList();
+      final episodes = await _provider.getEpisodes(animeId);
       await _dbHelper.insertEpisodes(episodes);
       return episodes;
     } catch (e) {

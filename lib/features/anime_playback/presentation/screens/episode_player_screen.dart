@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../core/utils/link_resolver.dart';
-import '../../../../core/api/animeify_api_client.dart';
 import '../../../../core/models/anime_model.dart';
 import '../../../../core/models/user_model.dart';
 import '../../../../core/repositories/user_repository.dart';
@@ -10,6 +9,8 @@ import '../../../auth/data/auth_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../anime_details/data/anime_repository.dart';
+import '../../../../core/services/extension_service.dart';
+import '../../../../core/services/ad_service.dart';
 import 'video_player_screen.dart';
 
 class EpisodePlayerScreen extends StatefulWidget {
@@ -46,8 +47,7 @@ class EpisodePlayerScreen extends StatefulWidget {
     if (fromUrl != null) return fromUrl;
 
     if (name.toLowerCase().contains('fullhd') ||
-        name.toLowerCase().contains('fhd'))
-      return '1080p';
+        name.toLowerCase().contains('fhd')) return '1080p';
     if (name.toLowerCase().contains('hd')) return '720p';
     if (name.toLowerCase().contains('sd')) return '480p';
 
@@ -80,7 +80,7 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
   @override
   void initState() {
     super.initState();
-    _repository = AnimeRepository(apiClient: AnimeifyApiClient());
+    _repository = AnimeRepository(extensionService: ExtensionService());
     _serversFuture = _repository.getServers(
       widget.anime.animeId,
       widget.episode.episodeNumber,
@@ -100,6 +100,9 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
       final resolvedUrl = await LinkResolver.resolve(urlString);
 
       if (mounted) {
+        // Show Interstitial ad before playing
+        await AdService.showInterstitial();
+
         // Save to History first
         _saveToHistory();
 
@@ -212,12 +215,10 @@ class _EpisodePlayerScreenState extends State<EpisodePlayerScreen> {
                                 horizontal: 30,
                                 vertical: 15,
                               ),
-                              backgroundColor: isDark
-                                  ? AppColors.darkCardBg
-                                  : Colors.white,
-                              foregroundColor: isDark
-                                  ? Colors.white
-                                  : Colors.black,
+                              backgroundColor:
+                                  isDark ? AppColors.darkCardBg : Colors.white,
+                              foregroundColor:
+                                  isDark ? Colors.white : Colors.black,
                               side: BorderSide(
                                 color: AppColors.primary,
                                 width: 2,

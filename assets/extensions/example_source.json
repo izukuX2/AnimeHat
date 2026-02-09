@@ -1,0 +1,80 @@
+{
+    "id": "example_source",
+    "name": "Template Extension",
+    "type": "source",
+    "version": "1.0.0",
+    "description": "An example extension showing how to use HTML and JSON parsing.",
+    "author": "AnimeHat Team",
+    "iconUrl": "https://example.com/icon.png",
+    "source": {
+        "baseUrl": "https://api.example.com",
+        "headers": {
+            "User-Agent": "Mozilla/5.0",
+            "X-API-Key": "YOUR_KEY_HERE"
+        },
+        "endpoints": {
+            "home": {
+                "path": "/v1/latest-episodes",
+                "type": "json",
+                "selectors": {
+                    "root": "data.items",
+                    "id": "anime_slug",
+                    "title": "anime_name",
+                    "image": "poster_url",
+                    "episode_number": "ep_num"
+                }
+            },
+            "search": {
+                "path": "/v1/search?q={query}",
+                "type": "json",
+                "selectors": {
+                    "root": "results",
+                    "id": "id",
+                    "title": "title",
+                    "image": "image"
+                }
+            },
+            "details": {
+                "path": "/v1/anime/{id}",
+                "type": "json",
+                "selectors": {
+                    "synopsis": "description",
+                    "status": "status_text"
+                }
+            },
+            "episodes": {
+                "path": "/v1/anime/{id}/episodes",
+                "type": "json",
+                "selectors": {
+                    "root": "episodes",
+                    "url": "video_url",
+                    "number": "number",
+                    "title": "title"
+                }
+            },
+            "html_example": {
+                "path": "/html-page",
+                "type": "html",
+                "selectors": {
+                    "container": ".anime-item",
+                    "id": {
+                        "selector": "a",
+                        "attr": "href",
+                        "regex": "/anime/([^/]+)"
+                    },
+                    "title": "h2",
+                    "image": {
+                        "selector": "img",
+                        "attr": "src",
+                        "replace": "http://",
+                        "replace_with": "https://"
+                    },
+                    "description": {
+                        "selector": ".desc",
+                        "substring": "0,100"
+                    }
+                }
+            }
+        }
+    }
+}

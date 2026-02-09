@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/extension_model.dart';
 import 'accent_colors.dart';
 
 /// Available app themes
@@ -218,12 +219,36 @@ class ThemeManager {
     AppThemeType type, {
     Locale locale = const Locale('en'),
     AccentPreset? accentOverride,
+    ModData? modData,
   }) {
     final config = themes[type]!;
     final isDark = config.brightness == Brightness.dark;
 
-    final primary = accentOverride?.primary ?? config.primaryColor;
-    final secondary = accentOverride?.secondary ?? config.secondaryColor;
+    var primary = accentOverride?.primary ?? config.primaryColor;
+    var secondary = accentOverride?.secondary ?? config.secondaryColor;
+    var background = config.backgroundColor;
+    var surface = config.surfaceColor;
+    var card = config.cardColor;
+    var textP = config.textPrimary;
+    var textS = config.textSecondary;
+
+    // Apply mod overrides if available
+    if (modData != null && modData.themeOverrides.isNotEmpty) {
+      final overrides = modData.themeOverrides;
+      if (overrides['primary'] != null)
+        primary = Color(int.parse(overrides['primary']));
+      if (overrides['secondary'] != null)
+        secondary = Color(int.parse(overrides['secondary']));
+      if (overrides['background'] != null)
+        background = Color(int.parse(overrides['background']));
+      if (overrides['surface'] != null)
+        surface = Color(int.parse(overrides['surface']));
+      if (overrides['card'] != null) card = Color(int.parse(overrides['card']));
+      if (overrides['textPrimary'] != null)
+        textP = Color(int.parse(overrides['textPrimary']));
+      if (overrides['textSecondary'] != null)
+        textS = Color(int.parse(overrides['textSecondary']));
+    }
 
     // Select font based on language
     final String languageCode = locale.languageCode;
@@ -242,7 +267,7 @@ class ThemeManager {
       useMaterial3: true,
       brightness: config.brightness,
       primaryColor: primary,
-      scaffoldBackgroundColor: config.backgroundColor,
+      scaffoldBackgroundColor: background,
 
       colorScheme: ColorScheme(
         brightness: config.brightness,
@@ -252,26 +277,25 @@ class ThemeManager {
         onSecondary: isDark ? Colors.black : Colors.white,
         error: const Color(0xFFCF6679),
         onError: Colors.black,
-        surface: config.surfaceColor,
-        onSurface: config.textPrimary,
+        surface: surface,
+        onSurface: textP,
       ),
 
       appBarTheme: AppBarTheme(
-        backgroundColor: config.backgroundColor,
-        foregroundColor: config.textPrimary,
+        backgroundColor: background,
+        foregroundColor: textP,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         systemOverlayStyle: SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-          systemNavigationBarColor:
-              config.navigationBarColor ?? config.backgroundColor,
+          systemNavigationBarColor: config.navigationBarColor ?? background,
         ),
       ),
 
       // Rectangular shapes for Minimal theme
       cardTheme: CardThemeData(
-        color: config.cardColor,
+        color: card,
         elevation:
             (type == AppThemeType.minimal || type == AppThemeType.minimalDark)
                 ? 0
@@ -291,23 +315,22 @@ class ThemeManager {
                       type == AppThemeType.modern ? 12 : 16,
                     ),
                     side: isDark
-                        ? BorderSide(
-                            color: config.textSecondary.withValues(alpha: 0.1))
+                        ? BorderSide(color: textS.withValues(alpha: 0.1))
                         : BorderSide.none,
                   ),
       ),
 
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: config.navigationBarColor ?? config.backgroundColor,
-        selectedItemColor: config.primaryColor,
-        unselectedItemColor: config.textSecondary,
+        backgroundColor: config.navigationBarColor ?? background,
+        selectedItemColor: primary,
+        unselectedItemColor: textS,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
 
       drawerTheme: DrawerThemeData(
-        backgroundColor: config.backgroundColor,
-        surfaceTintColor: config.surfaceColor,
+        backgroundColor: background,
+        surfaceTintColor: surface,
       ),
 
       inputDecorationTheme: InputDecorationTheme(
@@ -352,30 +375,30 @@ class ThemeManager {
         ),
       ),
 
-      iconTheme: IconThemeData(color: config.textPrimary, size: 24),
+      iconTheme: IconThemeData(color: textP, size: 24),
 
       textTheme: selectedTextTheme.copyWith(
         headlineLarge: selectedTextTheme.headlineLarge?.copyWith(
-          color: config.textPrimary,
+          color: textP,
           fontSize: 32,
           fontWeight: FontWeight.bold,
         ),
         headlineMedium: selectedTextTheme.headlineMedium?.copyWith(
-          color: config.textPrimary,
+          color: textP,
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
         titleLarge: selectedTextTheme.titleLarge?.copyWith(
-          color: config.textPrimary,
+          color: textP,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
         bodyLarge: selectedTextTheme.bodyLarge?.copyWith(
-          color: config.textPrimary,
+          color: textP,
           fontSize: 16,
         ),
         bodyMedium: selectedTextTheme.bodyMedium?.copyWith(
-          color: config.textSecondary,
+          color: textS,
           fontSize: 14,
         ),
       ),
@@ -383,7 +406,7 @@ class ThemeManager {
       progressIndicatorTheme: ProgressIndicatorThemeData(color: primary),
 
       dividerTheme: DividerThemeData(
-        color: config.textSecondary.withValues(alpha: 0.2),
+        color: textS.withValues(alpha: 0.2),
         thickness: 1,
         space: 1,
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/services/extension_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -15,7 +16,6 @@ import '../../../../core/database/database_helper.dart';
 import '../../../../core/services/offline_sync_service.dart';
 import '../../../../core/services/backup_service.dart';
 import '../../../home/data/home_repository.dart';
-import '../../../../core/api/animeify_api_client.dart';
 import 'updates_screen.dart';
 import '../../../../core/services/update_service.dart';
 
@@ -442,6 +442,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           _buildSection(
             context,
+            'Extensions',
+            child: ListTile(
+              leading: const Icon(LucideIcons.puzzle, color: Colors.purple),
+              title: const Text(
+                'Video Providers',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Manage anime sources and extensions',
+                style: TextStyle(fontSize: 12),
+              ),
+              trailing: const Icon(LucideIcons.chevronRight),
+              onTap: () {
+                Navigator.pushNamed(context, '/extensions');
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildSection(
+            context,
             l10n.offlineStorage,
             child: Column(
               children: [
@@ -825,7 +845,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _startOfflineSync(BuildContext context) {
-    final repository = HomeRepository(apiClient: AnimeifyApiClient());
+    final repository = HomeRepository(extensionService: ExtensionService());
     final syncService = OfflineSyncService(repository);
 
     showDialog(

@@ -10,8 +10,38 @@ class BannerAdWidget extends StatefulWidget {
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
 }
 
-class _BannerAdWidgetState extends State<BannerAdWidget> {
+class _BannerAdWidgetState extends State<BannerAdWidget> with RouteAware {
   Key _key = UniqueKey();
+  bool _isVisible = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AdService.routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    AdService.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPushNext() {
+    // When another route is pushed on top of this one
+    debugPrint('BannerAdWidget: Hidden (didPushNext)');
+    setState(() => _isVisible = false);
+  }
+
+  @override
+  void didPopNext() {
+    // When the top route is popped and this one becomes visible again
+    debugPrint('BannerAdWidget: Visible (didPopNext)');
+    setState(() {
+      _isVisible = true;
+      _key = UniqueKey(); // Refresh on return
+    });
+  }
 
   void _reloadAd() {
     if (!mounted) return;
@@ -22,7 +52,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AdService.adsEnabled) {
+    if (!AdService.adsEnabled || !_isVisible) {
       return const SizedBox.shrink();
     }
 
@@ -40,10 +70,12 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         onFailed: (placementId, error, message) {
           debugPrint('Banner ad failed: $placementId $error $message');
           // Retry after delay
-          Future.delayed(const Duration(seconds: 30), () {
-            debugPrint('Retrying Banner Load...');
-            _reloadAd();
-          });
+          if (_isVisible) {
+            Future.delayed(const Duration(seconds: 30), () {
+              debugPrint('Retrying Banner Load...');
+              _reloadAd();
+            });
+          }
         },
       ),
     );

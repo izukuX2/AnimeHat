@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../../core/services/extension_service.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/repositories/user_repository.dart';
 import '../../../../core/models/user_model.dart';
-import '../../../../core/api/animeify_api_client.dart';
 import '../../../../core/models/anime_model.dart';
 import '../../../../core/widgets/app_network_image.dart';
 import '../../data/home_repository.dart';
@@ -101,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _repository = HomeRepository(apiClient: AnimeifyApiClient());
+    _repository = HomeRepository(extensionService: ExtensionService());
     _refreshData();
     _ensureUserExists();
     _initUserStream();

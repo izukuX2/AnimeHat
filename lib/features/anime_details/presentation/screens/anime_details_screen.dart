@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../../../core/api/animeify_api_client.dart';
 import '../../../../core/models/anime_model.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -12,7 +11,10 @@ import '../../data/anime_repository.dart';
 import '../../../../core/theme/accent_colors.dart';
 import '../../../../core/theme/theme_manager.dart';
 import '../../../../core/services/share_service.dart';
+import '../../../../core/services/extension_service.dart';
 import 'dart:ui';
+import '../../../../core/widgets/banner_ad_widget.dart';
+import '../../../../core/services/ad_service.dart';
 
 class AnimeDetailsScreen extends StatefulWidget {
   final Anime anime;
@@ -39,7 +41,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _repository = AnimeRepository(apiClient: AnimeifyApiClient());
+    _repository = AnimeRepository(extensionService: ExtensionService());
     _detailsFuture = _repository.getAnimeDetails(
       widget.anime.animeId,
       malId: widget.anime.malId,
@@ -53,6 +55,9 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    // Show Interstitial Ad when entering details
+    AdService.showInterstitial();
   }
 
   @override
@@ -307,32 +312,39 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen>
         builder: (context) {
           final themedIsDark = Theme.of(context).brightness == Brightness.dark;
           return Scaffold(
-            body: CustomScrollView(
-              slivers: [
-                _buildAppBar(themedIsDark),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildMainInfo(themedIsDark),
-                        const SizedBox(height: 16),
-                        _buildEnrichedStats(themedIsDark, l10n),
-                        const SizedBox(height: 24),
-                        _buildWatchButton(themedIsDark, l10n),
-                        const SizedBox(height: 24),
-                        _buildSectionTitle(l10n.information),
-                        const SizedBox(height: 12),
-                        _buildDetailedInfo(themedIsDark, l10n),
-                        const SizedBox(height: 24),
-                        _buildSectionTitle(l10n.plot),
-                        const SizedBox(height: 12),
-                        _buildPlot(themedIsDark),
-                      ],
-                    ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: CustomScrollView(
+                    slivers: [
+                      _buildAppBar(themedIsDark),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildMainInfo(themedIsDark),
+                              const SizedBox(height: 16),
+                              _buildEnrichedStats(themedIsDark, l10n),
+                              const SizedBox(height: 24),
+                              _buildWatchButton(themedIsDark, l10n),
+                              const SizedBox(height: 24),
+                              _buildSectionTitle(l10n.information),
+                              const SizedBox(height: 12),
+                              _buildDetailedInfo(themedIsDark, l10n),
+                              const SizedBox(height: 24),
+                              _buildSectionTitle(l10n.plot),
+                              const SizedBox(height: 12),
+                              _buildPlot(themedIsDark),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const BannerAdWidget(),
               ],
             ),
           );
