@@ -149,11 +149,24 @@ fi
 echo -e "New Version:     ${GREEN}$FINAL_VERSION${NC}"
 echo -e "Channel:         ${CYAN}$CHANNEL${NC}"
 
-# 5. Update Files
-# Update pubspec.yaml
+# 5. Summary and Confirmation
+echo -e "\n${CYAN}📋 Shipment Summary:${NC}"
+echo -e "   From: ${YELLOW}$CURRENT_VERSION${NC}"
+echo -e "   To:   ${GREEN}$FINAL_VERSION${NC}"
+echo -e "   Channel: ${CYAN}$CHANNEL${NC}"
+echo -e "   Message: $MESSAGE"
+
+echo -en "\n${YELLOW}Proceed with shipment? [y/N]: ${NC}"
+read -n 1 PROCEED
+echo ""
+if [[ ! "$PROCEED" =~ ^[Yy]$ ]]; then
+    echo -e "${RED}Aborted.${NC}"
+    exit 0
+fi
+
+# 6. Update Files
 sed -i "s/^version: .*/version: $FINAL_VERSION/" $PUBSPEC
 
-# Update CHANGELOG.md
 DATE=$(date +%Y-%m-%d)
 TEMP_CHANGELOG="CHANGELOG.tmp"
 echo "## [$FINAL_VERSION] - $DATE" > $TEMP_CHANGELOG
@@ -162,9 +175,9 @@ echo "" >> $TEMP_CHANGELOG
 cat $CHANGELOG >> $TEMP_CHANGELOG
 mv $TEMP_CHANGELOG $CHANGELOG
 
-# 6. Git Operations
+# 7. Git Operations
 TRIGGER_RELEASE="n"
-if [ "$CHANNEL" == "stable" ] && [ "$FINAL_VERSION" != "$CURRENT_VERSION" ]; then
+if [ "$CHANNEL" == "stable" ]; then
     echo -e "\n${YELLOW}🚀 Create automated GitHub Release (APK)? [y/N]: ${NC}"
     read -n 1 TRIGGER_RELEASE
     echo ""
@@ -172,20 +185,31 @@ fi
 
 echo -e "\n${CYAN}📦 Committing and Pushing...${NC}"
 git add .
-git commit -m "$MESSAGE"
+git commit -m "chore(release): $FINAL_VERSION [skip ci]" -m "$MESSAGE"
 
 if [[ "$TRIGGER_RELEASE" =~ ^[Yy]$ ]]; then
     echo -e "${GREEN}🏷️ Creating Release Tag: v$FINAL_VERSION${NC}"
     git tag "v$FINAL_VERSION"
     git push origin main
     git push origin "v$FINAL_VERSION"
-elif [ "$FINAL_VERSION" != "$CURRENT_VERSION" ]; then
-    # Still version changed, but maybe not a formal release? 
-    # Usually we tag anyway for history, but if user said no to release, 
-    # we might just push the code.
-    git push origin main
 else
     git push origin main
+fi
+
+# 8. Website Update (Optional)
+WEBSITE_DIR="/home/izukux2/Development/website"
+if [ -d "$WEBSITE_DIR" ]; then
+    echo -e "\n${CYAN}🌐 Detected Website Directory. Trigger website rebuild? [y/N]: ${NC}"
+    read -n 1 UPDATE_WEBSITE
+    echo ""
+    if [[ "$UPDATE_WEBSITE" =~ ^[Yy]$ ]]; then
+        echo -e "${CYAN}🔄 Triggering website rebuild...${NC}"
+        cd "$WEBSITE_DIR/website" || cd "$WEBSITE_DIR"
+        git commit --allow-empty -m "Trigger rebuild for AnimeHat v$FINAL_VERSION"
+        git push origin main
+        cd - > /dev/null
+        echo -e "${GREEN}✅ Website rebuild triggered!${NC}"
+    fi
 fi
 
 echo -e "\n${GREEN}✅ Shipment Complete!${NC}"
