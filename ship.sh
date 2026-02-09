@@ -201,20 +201,26 @@ fi
 
 # 8. Website Update (Optional)
 WEBSITE_DIR="/home/izukux2/Development/website"
-if [ -d "$WEBSITE_DIR" ]; then
-    # Check for potential typo in remote
+WEBSITE_PKY="$WEBSITE_DIR/website/package.json"
+
+if [ -f "$WEBSITE_PKY" ]; then
+    # Extract correct repo URL from package.json
+    # Format: "url": "git+https://github.com/izukuX2/website.git"
+    CORRECT_URL=$(grep '"url":' "$WEBSITE_PKY" | sed -E 's/.*"url": "git\+(.*)".*/\1/')
+    
     cd "$WEBSITE_DIR"
-    REMOTE_URL=$(git remote get-url origin 2>/dev/null)
-    if [[ "$REMOTE_URL" == *"Wepsite"* ]]; then
-        echo -e "\n${YELLOW}⚠️  Warning: Website remote URL contains 'Wepsite' (typo?).${NC}"
-        echo -e "   Current: $REMOTE_URL"
-        echo -n "   Fix to 'Website'? [y/N]: "
+    CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null)
+    
+    if [[ "$CURRENT_REMOTE" != "$CORRECT_URL" ]] && [ -n "$CORRECT_URL" ]; then
+        echo -e "\n${YELLOW}⚠️  Warning: Website remote mismatch detected!${NC}"
+        echo -e "   Current: $CURRENT_REMOTE"
+        echo -e "   Target:  $CORRECT_URL"
+        echo -n "   Fix remote URL? [y/N]: "
         read -n 1 FIX_REMOTE
         echo ""
         if [[ "$FIX_REMOTE" =~ ^[Yy]$ ]]; then
-            NEW_REMOTE=$(echo "$REMOTE_URL" | sed 's/Wepsite/Website/g')
-            git remote set-url origin "$NEW_REMOTE"
-            echo -e "${GREEN}✅ Remote updated to: $NEW_REMOTE${NC}"
+            git remote set-url origin "$CORRECT_URL"
+            echo -e "${GREEN}✅ Remote updated!${NC}"
         fi
     fi
     cd - > /dev/null
@@ -224,7 +230,6 @@ if [ -d "$WEBSITE_DIR" ]; then
     echo ""
     if [[ "$UPDATE_WEBSITE" =~ ^[Yy]$ ]]; then
         echo -e "${CYAN}🔄 Triggering website rebuild...${NC}"
-        # Go to where .git is
         cd "$WEBSITE_DIR"
         git commit --allow-empty -m "build: trigger rebuild for AnimeHat v$FINAL_VERSION"
         git push origin main
