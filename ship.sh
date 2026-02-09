@@ -204,9 +204,8 @@ WEBSITE_DIR="/home/izukux2/Development/website"
 WEBSITE_PKY="$WEBSITE_DIR/website/package.json"
 
 if [ -f "$WEBSITE_PKY" ]; then
-    # Extract correct repo URL from package.json
-    # Format: "url": "git+https://github.com/izukuX2/website.git"
-    CORRECT_URL=$(grep '"url":' "$WEBSITE_PKY" | sed -E 's/.*"url": "git\+(.*)".*/\1/')
+    # Extract correct repo URL from package.json (specifically from the repository block)
+    CORRECT_URL=$(grep -A 2 '"repository":' "$WEBSITE_PKY" | grep '"url":' | sed -E 's/.*"url": "git\+(.*)".*/\1/')
     
     cd "$WEBSITE_DIR"
     CURRENT_REMOTE=$(git remote get-url origin 2>/dev/null)
